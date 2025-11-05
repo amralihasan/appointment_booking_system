@@ -129,11 +129,14 @@ class AppointmentResource extends Resource
 
                 Tables\Columns\TextColumn::make('client_name')
                     ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('client_phone')
-                    ->searchable()
-                    ->copyable(),
+                    ->sortable()
+                    ->url(fn ($record) => $record->contact_id 
+                        ? ContactResource::getUrl('view', ['record' => $record->contact_id])
+                        : null
+                    )
+                    ->openUrlInNewTab(false)
+                    ->color('primary')
+                    ->icon(fn ($record) => $record->contact_id ? 'heroicon-o-user' : null),
 
                 Tables\Columns\TextColumn::make('date_time')
                     ->dateTime()
@@ -145,21 +148,19 @@ class AppointmentResource extends Resource
                     ->numeric()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'booked' => 'success',
-                        'canceled' => 'danger',
-                        'completed' => 'info',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                Tables\Columns\SelectColumn::make('status')
+                    ->label('Status')
+                    ->options([
                         'booked' => 'Booked',
                         'canceled' => 'Canceled',
                         'completed' => 'Completed',
-                        default => $state,
+                    ])
+                    ->selectablePlaceholder(false)
+                    ->sortable()
+                    ->afterStateUpdated(function ($record, $state) {
+                        $record->update(['status' => $state]);
                     })
-                    ->sortable(),
+                    ->disabled(fn ($record) => $record->status === 'completed'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -176,6 +177,9 @@ class AppointmentResource extends Resource
 
                 Tables\Filters\SelectFilter::make('service_id')
                     ->relationship('service', 'name', modifyQueryUsing: fn (Builder $query) => $query->where('tenant_id', auth()->user()->tenant_id)),
+
+                Tables\Filters\Filter::make('show_past')
+                    ->label('Show Past Appointments'),
 
                 Tables\Filters\Filter::make('date_time')
                     ->form([

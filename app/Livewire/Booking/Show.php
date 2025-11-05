@@ -22,6 +22,11 @@ class Show extends Component
     public ?string $selectedTime = null;
     public array $availableDates = [];
     public array $availableTimeSlots = [];
+    
+    // Calendar properties
+    public $currentMonth;
+    public $currentYear;
+    public $calendarDays = [];
 
     // Step 2: Client Information
     public string $clientName = '';
@@ -58,8 +63,30 @@ class Show extends Component
             ->where('is_active', true)
             ->firstOrFail();
 
-        // Generate available dates (next 30 days)
-        $this->generateAvailableDates();
+        // Initialize calendar to current month
+        $this->currentMonth = Carbon::now()->month;
+        $this->currentYear = Carbon::now()->year;
+        
+        // Generate calendar and available dates
+        $this->generateCalendar();
+    }
+
+    public function nextMonth()
+    {
+        $date = Carbon::create($this->currentYear, $this->currentMonth, 1);
+        $date->addMonth();
+        $this->currentMonth = $date->month;
+        $this->currentYear = $date->year;
+        $this->generateCalendar();
+    }
+
+    public function previousMonth()
+    {
+        $date = Carbon::create($this->currentYear, $this->currentMonth, 1);
+        $date->subMonth();
+        $this->currentMonth = $date->month;
+        $this->currentYear = $date->year;
+        $this->generateCalendar();
     }
 
     public function selectDate(string $date)
@@ -109,11 +136,62 @@ class Show extends Component
         }
     }
 
+    protected function generateCalendar()
+    {
+        $firstDayOfMonth = Carbon::create($this->currentYear, $this->currentMonth, 1);
+        $lastDayOfMonth = $firstDayOfMonth->copy()->endOfMonth();
+        
+        // Get the first day of the week (Sunday = 0)
+        $startDay = $firstDayOfMonth->dayOfWeek;
+        
+        // Calculate days to show (including previous month's days to fill the week)
+        $daysInMonth = $lastDayOfMonth->day;
+        $daysToShow = ceil(($daysInMonth + $startDay) / 7) * 7;
+        
+        $calendarDays = [];
+        $currentDate = $firstDayOfMonth->copy()->subDays($startDay);
+        
+        for ($i = 0; $i < $daysToShow; $i++) {
+            $dayOfWeek = $currentDate->dayOfWeek;
+            $dateString = $currentDate->format('Y-m-d');
+            $isCurrentMonth = $currentDate->month == $this->currentMonth;
+            $isToday = $currentDate->isToday();
+            $isPast = $currentDate->isPast() && !$isToday;
+            
+            // Check if there's availability for this day
+            $hasAvailability = false;
+            if ($isCurrentMonth && !$isPast) {
+                $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                    ->where('user_id', $this->service->user_id)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->exists();
+            }
+            
+            $calendarDays[] = [
+                'date' => $dateString,
+                'day' => $currentDate->day,
+                'isCurrentMonth' => $isCurrentMonth,
+                'isToday' => $isToday,
+                'isPast' => $isPast,
+                'hasAvailability' => $hasAvailability,
+                'isSelected' => $this->selectedDate === $dateString,
+            ];
+            
+            $currentDate->addDay();
+        }
+        
+        $this->calendarDays = $calendarDays;
+        
+        // Also generate the flat list of available dates for backward compatibility
+        $this->generateAvailableDates();
+    }
+
     protected function generateAvailableDates()
     {
         $dates = [];
         $startDate = Carbon::today();
-        $endDate = Carbon::today()->addDays(30);
+        $endDate = Carbon::today()->addDays(90); // 3 months ahead
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dayOfWeek = $date->dayOfWeek;

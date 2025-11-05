@@ -2,14 +2,28 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ContactResource\Pages;
-use App\Models\Contact;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Contact;
+use Filament\Infolists;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Infolists\Infolist;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Section;
+use Filament\Tables\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Pages\Actions\DeleteAction;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Resources\ContactResource\Pages;
+use App\Filament\Resources\ContactResource\Pages\EditContact;
+use App\Filament\Resources\ContactResource\Pages\ViewContact;
+use App\Filament\Resources\ContactResource\Pages\ListContacts;
+use App\Filament\Resources\ContactResource\Pages\CreateContact;
+use App\Filament\Resources\ContactResource\RelationManagers\AppointmentsRelationManager;
 
 class ContactResource extends Resource
 {
@@ -101,10 +115,45 @@ class ContactResource extends Resource
             ->defaultSort('created_at', 'desc');
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Contact Information')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('first_name')
+                            ->label('First Name'),
+                        
+                        Infolists\Components\TextEntry::make('last_name')
+                            ->label('Last Name'),
+                        
+                        Infolists\Components\TextEntry::make('mobile')
+                            ->label('Mobile')
+                            ->copyable()
+                            ->icon('heroicon-o-phone'),
+                        
+                        Infolists\Components\TextEntry::make('email')
+                            ->label('Email')
+                            ->copyable()
+                            ->icon('heroicon-o-envelope')
+                            ->default('N/A'),
+                        
+                        Infolists\Components\TextEntry::make('appointments_count')
+                            ->label('Total Appointments')
+                            ->getStateUsing(fn ($record) => $record->appointments()->count()),
+                        
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Created At')
+                            ->dateTime(),
+                    ])
+                    ->columns(2),
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [
-            //
+            AppointmentsRelationManager::class,
         ];
     }
 
@@ -113,6 +162,7 @@ class ContactResource extends Resource
         return [
             'index' => Pages\ListContacts::route('/'),
             'create' => Pages\CreateContact::route('/create'),
+            'view' => Pages\ViewContact::route('/{record}'),
             'edit' => Pages\EditContact::route('/{record}/edit'),
         ];
     }

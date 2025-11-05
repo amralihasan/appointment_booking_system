@@ -1,5 +1,5 @@
-<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto">
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-gray-900 mb-2">
@@ -12,116 +12,167 @@
             @endif
         </div>
 
-        <!-- Progress Steps -->
-        <div class="mb-8">
-            <div class="flex items-center justify-center">
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full {{ $currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600' }}">
-                            <span class="font-semibold">1</span>
-                        </div>
-                        <span class="ml-2 text-sm font-medium {{ $currentStep >= 1 ? 'text-blue-600' : 'text-gray-500' }}">Select Date & Time</span>
-                    </div>
-                    <div class="w-16 h-1 {{ $currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300' }}"></div>
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full {{ $currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600' }}">
-                            <span class="font-semibold">2</span>
-                        </div>
-                        <span class="ml-2 text-sm font-medium {{ $currentStep >= 2 ? 'text-blue-600' : 'text-gray-500' }}">Your Information</span>
-                    </div>
-                    <div class="w-16 h-1 {{ $currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-300' }}"></div>
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full {{ $currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600' }}">
-                            <span class="font-semibold">3</span>
-                        </div>
-                        <span class="ml-2 text-sm font-medium {{ $currentStep >= 3 ? 'text-blue-600' : 'text-gray-500' }}">Confirmation</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Step 1: Date & Time Selection -->
         @if($currentStep == 1)
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">Select Date & Time</h2>
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                    <!-- Left Side: Calendar -->
+                    <div class="p-4 border-r border-gray-200">
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <button
+                                    type="button"
+                                    wire:click="previousMonth"
+                                    class="p-1 hover:bg-gray-100 rounded-lg transition"
+                                >
+                                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <h3 class="text-base font-semibold text-gray-900">
+                                    {{ Carbon\Carbon::create($currentYear, $currentMonth, 1)->format('F Y') }}
+                                </h3>
+                                <button
+                                    type="button"
+                                    wire:click="nextMonth"
+                                    class="p-1 hover:bg-gray-100 rounded-lg transition"
+                                >
+                                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
 
-                @if($service)
-                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                                <span class="text-gray-600">Duration:</span>
-                                <span class="font-semibold ml-2">{{ $service->duration }} minutes</span>
+                            <!-- Day Headers -->
+                            <div class="grid grid-cols-7 gap-2 mb-2">
+                                @foreach(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $day)
+                                    <div class="text-center text-xs font-medium text-gray-500 py-1">
+                                        {{ $day }}
+                                    </div>
+                                @endforeach
                             </div>
-                            <div>
-                                <span class="text-gray-600">Price:</span>
-                                <span class="font-semibold ml-2">EGP {{ number_format($service->price, 2) }}</span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600">Type:</span>
-                                <span class="font-semibold ml-2">{{ $service->type === 'one' ? 'One-to-One' : 'Group' }}</span>
-                            </div>
-                            @if($service->type === 'group' && $service->max_spots)
-                                <div>
-                                    <span class="text-gray-600">Max Spots:</span>
-                                    <span class="font-semibold ml-2">{{ $service->max_spots }}</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                @endif
 
-                <!-- Date Selection -->
-                <div class="mb-6">
-                    <h3 class="text-lg font-medium mb-3">Select a Date</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        @foreach($availableDates as $date)
-                            <button
-                                type="button"
-                                wire:click="selectDate('{{ $date['date'] }}')"
-                                class="p-4 border-2 rounded-lg text-center transition {{ $selectedDate === $date['date'] ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300' }}"
-                            >
-                                <div class="text-sm text-gray-600">{{ $date['day'] }}</div>
-                                <div class="font-semibold mt-1">{{ $date['display'] }}</div>
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-
-                <!-- Time Slots -->
-                @if($selectedDate)
-                    <div>
-                        <h3 class="text-lg font-medium mb-3">Available Time Slots</h3>
-                        @if(empty($availableTimeSlots))
-                            <div class="text-center py-8 text-gray-500">
-                                <p>No available time slots for this date.</p>
-                                <p class="text-sm mt-2">Please select another date.</p>
-                            </div>
-                        @else
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                @foreach($availableTimeSlots as $slot)
+                            <!-- Calendar Grid -->
+                            <div class="grid grid-cols-7 gap-2">
+                                @foreach($calendarDays as $day)
                                     <button
                                         type="button"
-                                        wire:click="selectTime('{{ $slot['start'] }}')"
-                                        class="p-3 border-2 rounded-lg text-center transition {{ $selectedTime === $slot['start'] ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300' }}"
-                                    >
-                                        <div class="font-semibold">{{ $slot['display'] }}</div>
-                                        @if($service && $service->type === 'group' && $this->remainingSpots)
-                                            <div class="text-xs text-gray-600 mt-1">
-                                                {{ $this->remainingSpots }} spots left
-                                            </div>
+                                        @if($day['isCurrentMonth'] && !$day['isPast'] && $day['hasAvailability'])
+                                            wire:click="selectDate('{{ $day['date'] }}')"
                                         @endif
+                                        class="aspect-square flex items-center justify-center text-base font-normal rounded-lg transition
+                                            @if(!$day['isCurrentMonth'] || $day['isPast'])
+                                                text-gray-300 cursor-not-allowed bg-transparent
+                                            @elseif($day['isSelected'])
+                                                bg-blue-600 text-white font-medium
+                                            @elseif($day['isToday'])
+                                                bg-gray-100 text-gray-700 font-medium
+                                            @elseif($day['hasAvailability'])
+                                                text-gray-700 hover:bg-gray-100 cursor-pointer bg-transparent
+                                            @else
+                                                text-gray-400 cursor-not-allowed bg-transparent
+                                            @endif
+                                        "
+                                        @if(!$day['isCurrentMonth'] || $day['isPast'] || !$day['hasAvailability'])
+                                            disabled
+                                        @endif
+                                    >
+                                        {{ $day['day'] }}
                                     </button>
                                 @endforeach
                             </div>
+                        </div>
+
+                        <!-- Service Info -->
+                        @if($service)
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Duration:</span>
+                                        <span class="font-semibold">{{ $service->duration }} min</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Price:</span>
+                                        <span class="font-semibold">EGP {{ number_format($service->price, 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Type:</span>
+                                        <span class="font-semibold">{{ $service->type === 'one' ? 'One-to-One' : 'Group' }}</span>
+                                    </div>
+                                    @if($service->type === 'group' && $service->max_spots)
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Max Spots:</span>
+                                            <span class="font-semibold">{{ $service->max_spots }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
                         @endif
                     </div>
-                @endif
+
+                    <!-- Right Side: Time Slots -->
+                    <div class="p-6 bg-gray-50">
+                        @if($selectedDate)
+                            <div class="mb-4">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">
+                                    {{ Carbon\Carbon::parse($selectedDate)->format('l, F d, Y') }}
+                                </h3>
+                                <p class="text-sm text-gray-600">Select a time slot</p>
+                            </div>
+
+                            @if(empty($availableTimeSlots))
+                                <div class="text-center py-12">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <p class="text-gray-500 font-medium">No available time slots</p>
+                                    <p class="text-sm text-gray-400 mt-1">Please select another date</p>
+                                </div>
+                            @else
+                                <div class="space-y-2 max-h-[500px] overflow-y-auto">
+                                    @foreach($availableTimeSlots as $slot)
+                                        <button
+                                            type="button"
+                                            wire:click="selectTime('{{ $slot['start'] }}')"
+                                            class="w-full p-4 text-left border-2 rounded-lg transition
+                                                {{ $selectedTime === $slot['start'] 
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-700' 
+                                                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700' 
+                                                }}"
+                                        >
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-semibold">{{ $slot['display'] }}</span>
+                                                @if($service && $service->type === 'group')
+                                                    <span class="text-xs text-gray-500">
+                                                        @if($this->remainingSpots)
+                                                            {{ $this->remainingSpots }} spots left
+                                                        @else
+                                                            Full
+                                                        @endif
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @else
+                            <div class="text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <p class="text-gray-500 font-medium">Select a date</p>
+                                <p class="text-sm text-gray-400 mt-1">Choose a date from the calendar to view available time slots</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         @endif
 
         <!-- Step 2: Client Information -->
         @if($currentStep == 2)
-            <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
                 <h2 class="text-xl font-semibold mb-4">Your Information</h2>
 
                 <div class="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -224,7 +275,7 @@
 
         <!-- Step 3: Confirmation -->
         @if($currentStep == 3 && $appointment)
-            <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <div class="bg-white rounded-lg shadow-md p-6 text-center max-w-2xl mx-auto">
                 <div class="mb-6">
                     <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                         <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
