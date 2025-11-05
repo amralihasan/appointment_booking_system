@@ -3,15 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Appointment;
-use App\Models\Service;
+use App\Models\Contact;
 use Filament\Widgets\ChartWidget;
 use Carbon\Carbon;
 
-class ServicesChart extends ChartWidget
+class TopContactsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Most Used Services';
+    protected static ?string $heading = 'Top Contacts by Bookings';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 4;
 
     public ?string $filter = null;
 
@@ -61,24 +61,25 @@ class ServicesChart extends ChartWidget
         $monthStart = $selectedDate->copy()->startOfMonth()->utc();
         $monthEnd = $selectedDate->copy()->endOfMonth()->utc();
 
-        // Get appointments for current month grouped by service
+        // Get appointments for selected month grouped by contact
         $appointments = Appointment::where('tenant_id', $user->tenant_id)
             ->where('user_id', $user->id)
+            ->whereNotNull('contact_id')
             ->whereBetween('date_time', [$monthStart, $monthEnd])
-            ->with('service')
+            ->with('contact')
             ->get();
 
-        // Group by service and count
-        $serviceCounts = $appointments->groupBy('service_id')
+        // Group by contact and count
+        $contactCounts = $appointments->groupBy('contact_id')
             ->map(function ($group) {
                 return $group->count();
             })
             ->sortDesc()
-            ->take(5); // Top 5 services
+            ->take(5); // Top 5 contacts
 
-        // Get service names
-        $serviceIds = $serviceCounts->keys();
-        $services = Service::whereIn('id', $serviceIds)
+        // Get contact names
+        $contactIds = $contactCounts->keys();
+        $contacts = Contact::whereIn('id', $contactIds)
             ->get()
             ->keyBy('id');
 
@@ -86,10 +87,14 @@ class ServicesChart extends ChartWidget
         $labels = [];
         $data = [];
 
-        foreach ($serviceCounts as $serviceId => $count) {
-            $service = $services->get($serviceId);
-            if ($service) {
-                $labels[] = $service->name;
+        foreach ($contactCounts as $contactId => $count) {
+            $contact = $contacts->get($contactId);
+            if ($contact) {
+                $name = trim($contact->first_name . ' ' . $contact->last_name);
+                if (empty($name)) {
+                    $name = $contact->mobile;
+                }
+                $labels[] = $name;
                 $data[] = $count;
             }
         }
@@ -97,7 +102,7 @@ class ServicesChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Appointments',
+                    'label' => 'Bookings',
                     'data' => $data,
                     'backgroundColor' => [
                         'rgba(59, 130, 246, 0.5)', // blue

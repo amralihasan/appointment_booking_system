@@ -3,15 +3,14 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Appointment;
-use App\Models\Service;
 use Filament\Widgets\ChartWidget;
 use Carbon\Carbon;
 
-class ServicesChart extends ChartWidget
+class AppointmentStatusChart extends ChartWidget
 {
-    protected static ?string $heading = 'Most Used Services';
+    protected static ?string $heading = 'Appointments by Status';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 5;
 
     public ?string $filter = null;
 
@@ -61,38 +60,39 @@ class ServicesChart extends ChartWidget
         $monthStart = $selectedDate->copy()->startOfMonth()->utc();
         $monthEnd = $selectedDate->copy()->endOfMonth()->utc();
 
-        // Get appointments for current month grouped by service
+        // Get appointments for selected month grouped by status
         $appointments = Appointment::where('tenant_id', $user->tenant_id)
             ->where('user_id', $user->id)
             ->whereBetween('date_time', [$monthStart, $monthEnd])
-            ->with('service')
             ->get();
 
-        // Group by service and count
-        $serviceCounts = $appointments->groupBy('service_id')
-            ->map(function ($group) {
-                return $group->count();
-            })
-            ->sortDesc()
-            ->take(5); // Top 5 services
+        // Initialize status counts
+        $statusCounts = [
+            'booked' => 0,
+            'canceled' => 0,
+            'completed' => 0,
+        ];
 
-        // Get service names
-        $serviceIds = $serviceCounts->keys();
-        $services = Service::whereIn('id', $serviceIds)
-            ->get()
-            ->keyBy('id');
-
-        // Prepare chart data
-        $labels = [];
-        $data = [];
-
-        foreach ($serviceCounts as $serviceId => $count) {
-            $service = $services->get($serviceId);
-            if ($service) {
-                $labels[] = $service->name;
-                $data[] = $count;
+        // Group appointments by status
+        foreach ($appointments as $appointment) {
+            $status = $appointment->status;
+            if (isset($statusCounts[$status])) {
+                $statusCounts[$status]++;
             }
         }
+
+        // Prepare chart data
+        $labels = [
+            'booked' => 'Booked',
+            'canceled' => 'Canceled',
+            'completed' => 'Completed',
+        ];
+
+        $data = [
+            $statusCounts['booked'],
+            $statusCounts['canceled'],
+            $statusCounts['completed'],
+        ];
 
         return [
             'datasets' => [
@@ -100,23 +100,19 @@ class ServicesChart extends ChartWidget
                     'label' => 'Appointments',
                     'data' => $data,
                     'backgroundColor' => [
-                        'rgba(59, 130, 246, 0.5)', // blue
-                        'rgba(16, 185, 129, 0.5)', // green
-                        'rgba(245, 158, 11, 0.5)', // yellow
-                        'rgba(239, 68, 68, 0.5)',  // red
-                        'rgba(139, 92, 246, 0.5)', // purple
+                        'rgba(16, 185, 129, 0.5)', // green for booked
+                        'rgba(239, 68, 68, 0.5)',  // red for canceled
+                        'rgba(59, 130, 246, 0.5)', // blue for completed
                     ],
                     'borderColor' => [
-                        'rgb(59, 130, 246)',
                         'rgb(16, 185, 129)',
-                        'rgb(245, 158, 11)',
                         'rgb(239, 68, 68)',
-                        'rgb(139, 92, 246)',
+                        'rgb(59, 130, 246)',
                     ],
                     'borderWidth' => 1,
                 ],
             ],
-            'labels' => $labels,
+            'labels' => array_values($labels),
         ];
     }
 

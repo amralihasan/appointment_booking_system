@@ -39,6 +39,8 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\AppointmentStats::class,
                 \App\Filament\Widgets\ServicesChart::class,
                 \App\Filament\Widgets\AppointmentsByDayChart::class,
+                \App\Filament\Widgets\TopContactsChart::class,
+                \App\Filament\Widgets\AppointmentStatusChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,
