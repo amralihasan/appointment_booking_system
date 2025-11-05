@@ -36,4 +36,6 @@ class ListAppointments extends ListRecords
         
         return $query;
     }
+
+    protected static string $view = 'filament.resources.appointment-resource.pages.list-appointments';
 }

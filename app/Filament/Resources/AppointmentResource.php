@@ -10,7 +10,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Grouping\Group;
 use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 
 class AppointmentResource extends Resource
 {
@@ -181,6 +183,64 @@ class AppointmentResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->groups([
+                Group::make('date_time')
+                    ->date()
+                    ->label('Date')
+                    ->getTitleFromRecordUsing(fn ($record) => Carbon::parse($record->date_time)
+                        ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
+                        ->locale(app()->getLocale())
+                        ->translatedFormat('l, F d, Y'))
+                    ->scopeQueryByKeyUsing(function (Builder $query, string $key) {
+                        // Parse the date key (format: Y-m-d)
+                        $date = Carbon::parse($key, 'UTC');
+                        return $query->whereDate('date_time', $date);
+                    })
+                    ->getDescriptionFromRecordUsing(function ($record) {
+                        // $record->date_time is already a Carbon instance (from datetime cast)
+                        // Get the date string in Y-m-d format from UTC
+                        $dateTime = $record->date_time instanceof Carbon 
+                            ? $record->date_time->copy()->utc() 
+                            : Carbon::parse($record->date_time, 'UTC')->utc();
+                        
+                        $dateString = $dateTime->format('Y-m-d');
+                        
+                        // Build query with same base filters as the table
+                        // Use whereRaw with DATE() function to compare dates correctly
+                        $query = Appointment::where('tenant_id', $record->tenant_id)
+                            ->where('user_id', $record->user_id)
+                            ->whereRaw('DATE(date_time) = ?', [$dateString]);
+                        
+                        // Get all records for this date
+                        $dateAppointments = $query->get();
+                        
+                        $total = $dateAppointments->count();
+                        $booked = $dateAppointments->where('status', 'booked')->count();
+                        $canceled = $dateAppointments->where('status', 'canceled')->count();
+                        $completed = $dateAppointments->where('status', 'completed')->count();
+                        
+                        $parts = [];
+                        if ($booked > 0) {
+                            $parts[] = "{$booked} booked";
+                        }
+                        if ($canceled > 0) {
+                            $parts[] = "{$canceled} canceled";
+                        }
+                        if ($completed > 0) {
+                            $parts[] = "{$completed} completed";
+                        }
+                        
+                        $statusText = !empty($parts) ? ' • ' . implode(' • ', $parts) : '';
+                        
+                        return "{$total} appointment(s){$statusText}";
+                    })
+                    ->collapsible()
+                    ->orderQueryUsing(function (Builder $query, string $direction) {
+                        // Sort groups by date, nearest first (ascending)
+                        return $query->orderByRaw("DATE(date_time) ASC");
+                    }),
+            ])
+            ->defaultGroup('date_time')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
@@ -223,7 +283,7 @@ class AppointmentResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('date_time', 'desc');
+            ->defaultSort('date_time', 'asc');
     }
 
     public static function getRelations(): array
