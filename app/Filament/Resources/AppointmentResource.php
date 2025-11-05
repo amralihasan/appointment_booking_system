@@ -141,10 +141,10 @@ class AppointmentResource extends Resource
                     ->icon(fn ($record) => $record->contact_id ? 'heroicon-o-user' : null),
 
                 Tables\Columns\TextColumn::make('date_time')
-                    ->dateTime('M j, Y g:i A')
+                    ->time('g:i A')
                     ->sortable()
                     ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
-                    ->label('Date & Time'),
+                    ->label('Time'),
 
                 Tables\Columns\TextColumn::make('duration')
                     ->label('Duration (min)')
