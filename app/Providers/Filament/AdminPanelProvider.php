@@ -38,6 +38,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 \App\Filament\Widgets\AppointmentStats::class,
                 \App\Filament\Widgets\ServicesChart::class,
+                \App\Filament\Widgets\AppointmentsByDayChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,
