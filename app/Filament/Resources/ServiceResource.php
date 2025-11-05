@@ -124,6 +124,19 @@ class ServiceResource extends Resource
                     ->searchable()
                     ->copyable(),
 
+                Tables\Columns\TextColumn::make('booking_preview')
+                    ->label('Preview')
+                    ->state('View')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('primary')
+                    ->url(fn ($record) => route('booking.show', [
+                        'tenantSlug' => $record->tenant->slug,
+                        'serviceSlug' => $record->slug,
+                    ]))
+                    ->openUrlInNewTab()
+                    ->tooltip('Open booking preview in new tab')
+                    ->sortable(false),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->label('Active'),
@@ -175,7 +188,8 @@ class ServiceResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where('tenant_id', auth()->user()->tenant_id)
-            ->where('user_id', auth()->id());
+            ->where('user_id', auth()->id())
+            ->with('tenant');
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array

@@ -162,6 +162,9 @@ class Show extends Component
 
     public function render()
     {
-        return view('livewire.booking.show');
+        return view('livewire.booking.show')
+            ->layout('livewire.layouts.booking-layout', [
+                'title' => $this->service ? $this->service->name . ' - Book Appointment' : 'Book Appointment',
+            ]);
     }
 }
