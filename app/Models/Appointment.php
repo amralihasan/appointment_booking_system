@@ -27,6 +27,36 @@ class Appointment extends Model
             'date_time' => 'datetime',
         ];
     }
+    
+    /**
+     * Override to ensure date_time is always stored as UTC string
+     */
+    public function setAttribute($key, $value)
+    {
+        if ($key === 'date_time' && $value !== null) {
+            // If it's a Carbon instance, ensure it's in UTC and convert to string
+            if ($value instanceof \Carbon\Carbon) {
+                $value = $value->utc()->format('Y-m-d H:i:s');
+            }
+        }
+        
+        return parent::setAttribute($key, $value);
+    }
+    
+    /**
+     * Override to ensure date_time is always parsed as UTC from database
+     */
+    protected function castAttribute($key, $value)
+    {
+        if ($key === 'date_time' && $value !== null) {
+            // Always parse as UTC from database (database stores UTC)
+            if (is_string($value)) {
+                return \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $value, 'UTC');
+            }
+        }
+        
+        return parent::castAttribute($key, $value);
+    }
 
     public function tenant(): BelongsTo
     {

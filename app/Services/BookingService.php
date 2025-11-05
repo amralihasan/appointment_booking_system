@@ -24,17 +24,34 @@ class BookingService
     {
         return DB::transaction(function () use ($data) {
             $service = Service::findOrFail($data['service_id']);
-            $dateTime = Carbon::parse($data['date_time']);
+            $user = $service->user;
+            $coachTimezone = $user->timezone ?? 'Africa/Cairo';
+            
+            // If date_time is already a Carbon instance in UTC, use it directly
+            // Otherwise, parse it assuming it's in UTC (from the booking flow)
+            if ($data['date_time'] instanceof Carbon) {
+                $dateTime = $data['date_time']->copy();
+            } else {
+                $dateTime = Carbon::parse($data['date_time'], 'UTC');
+            }
 
-            // Validate availability
-            if (!$this->validateAvailability($service, $dateTime, $data['tenant_id'])) {
+            // Validate availability (convert to coach's timezone for comparison)
+            $dateTimeInCoachTz = $dateTime->copy()->setTimezone($coachTimezone);
+            if (!$this->validateAvailability($service, $dateTimeInCoachTz, $data['tenant_id'])) {
                 throw new \Exception('This time slot is no longer available.');
             }
 
             // Find or create contact
             $contact = $this->findOrCreateContact($data);
 
-            // Create appointment
+            // Ensure date_time is properly converted to UTC for storage
+            // The dateTime is already in UTC from the booking flow, but let's make sure
+            $dateTimeForStorage = $dateTime->copy();
+            if (!$dateTimeForStorage->timezone || $dateTimeForStorage->timezone->getName() !== 'UTC') {
+                $dateTimeForStorage = $dateTimeForStorage->utc();
+            }
+            
+            // Create appointment - pass as Carbon instance, model will handle conversion
             $appointment = Appointment::create([
                 'tenant_id' => $data['tenant_id'],
                 'user_id' => $service->user_id,
@@ -43,7 +60,7 @@ class BookingService
                 'client_name' => $data['client_name'],
                 'client_phone' => $data['client_phone'],
                 'client_email' => $data['client_email'] ?? null,
-                'date_time' => $dateTime,
+                'date_time' => $dateTimeForStorage,
                 'duration' => $service->duration,
                 'status' => 'booked',
                 'notes' => $data['notes'] ?? null,
@@ -58,8 +75,9 @@ class BookingService
      */
     protected function validateAvailability(Service $service, Carbon $dateTime, int $tenantId): bool
     {
-        $slotStart = $dateTime->copy();
-        $slotEnd = $dateTime->copy()->addMinutes($service->duration);
+        // Convert to UTC for database comparison (database stores in UTC)
+        $slotStart = $dateTime->copy()->utc();
+        $slotEnd = $dateTime->copy()->addMinutes($service->duration)->utc();
 
         // For one-to-one: check if slot is already booked
         if ($service->type === 'one') {

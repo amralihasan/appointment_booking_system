@@ -30,7 +30,7 @@ class ListAppointments extends ListRecords
         
         if (!$showPastActive) {
             $userTimezone = auth()->user()->timezone ?? 'Africa/Cairo';
-            $now = Carbon::now($userTimezone);
+            $now = Carbon::now($userTimezone)->utc(); // Convert to UTC for database comparison
             return $query->where('date_time', '>=', $now);
         }
         

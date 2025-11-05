@@ -139,9 +139,10 @@ class AppointmentResource extends Resource
                     ->icon(fn ($record) => $record->contact_id ? 'heroicon-o-user' : null),
 
                 Tables\Columns\TextColumn::make('date_time')
-                    ->dateTime()
+                    ->dateTime('M j, Y g:i A')
                     ->sortable()
-                    ->timezone(auth()->user()->timezone ?? 'Africa/Cairo'),
+                    ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
+                    ->label('Date & Time'),
 
                 Tables\Columns\TextColumn::make('duration')
                     ->label('Duration (min)')
@@ -150,14 +151,27 @@ class AppointmentResource extends Resource
 
                 Tables\Columns\SelectColumn::make('status')
                     ->label('Status')
-                    ->options([
-                        'booked' => 'Booked',
-                        'canceled' => 'Canceled',
-                        'completed' => 'Completed',
-                    ])
+                    ->options(function ($record) {
+                        $options = [
+                            'booked' => 'Booked',
+                            'canceled' => 'Canceled',
+                            'completed' => 'Completed',
+                        ];
+                        
+                        // If status is canceled, remove 'booked' option
+                        if ($record && $record->status === 'canceled') {
+                            unset($options['booked']);
+                        }
+                        
+                        return $options;
+                    })
                     ->selectablePlaceholder(false)
                     ->sortable()
                     ->afterStateUpdated(function ($record, $state) {
+                        // Prevent changing from 'canceled' to 'booked' (double check)
+                        if ($record->status === 'canceled' && $state === 'booked') {
+                            throw new \Exception('Cannot change status from Canceled to Booked.');
+                        }
                         $record->update(['status' => $state]);
                     })
                     ->disabled(fn ($record) => $record->status === 'completed'),

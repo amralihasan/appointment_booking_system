@@ -67,8 +67,17 @@ class Show extends Component
         $this->currentMonth = Carbon::now()->month;
         $this->currentYear = Carbon::now()->year;
         
-        // Generate calendar and available dates
-        $this->generateCalendar();
+        // Initialize selectedDate to null to ensure fresh selection
+        $this->selectedDate = null;
+        
+        // Automatically select the first available date FIRST (this will set selectedDate and update calendar)
+        // This will also call generateCalendar() internally, so we don't need to call it again
+        $this->selectFirstAvailableDate();
+        
+        // Ensure calendar is regenerated one more time to reflect the selected date
+        if ($this->selectedDate) {
+            $this->generateCalendar();
+        }
     }
 
     public function nextMonth()
@@ -84,20 +93,65 @@ class Show extends Component
     {
         $date = Carbon::create($this->currentYear, $this->currentMonth, 1);
         $date->subMonth();
-        $this->currentMonth = $date->month;
-        $this->currentYear = $date->year;
+        
+        // Don't allow navigating to past months
+        $today = Carbon::today();
+        $firstDayOfPreviousMonth = $date->copy()->startOfMonth();
+        
+        if ($firstDayOfPreviousMonth->lt($today)) {
+            // If the previous month is in the past, go to current month instead
+            $this->currentMonth = $today->month;
+            $this->currentYear = $today->year;
+        } else {
+            $this->currentMonth = $date->month;
+            $this->currentYear = $date->year;
+        }
+        
         $this->generateCalendar();
     }
 
     public function selectDate(string $date)
     {
+        // Prevent selecting past dates
+        $selectedDate = Carbon::parse($date);
+        $today = Carbon::today();
+        
+        if ($selectedDate->lt($today)) {
+            $this->addError('selectedDate', 'Cannot select past dates. Please select a future date.');
+            return;
+        }
+        
         $this->selectedDate = $date;
         $this->selectedTime = null;
+        
+        // Update calendar month if needed to show the selected date
+        if ($selectedDate->month != $this->currentMonth || $selectedDate->year != $this->currentYear) {
+            $this->currentMonth = $selectedDate->month;
+            $this->currentYear = $selectedDate->year;
+            $this->generateCalendar();
+        } else {
+            // Regenerate calendar to update selected state
+            $this->generateCalendar();
+        }
+        
         $this->loadTimeSlots($date);
     }
 
     public function selectTime(string $time)
     {
+        // Prevent selecting past times
+        if (!$this->selectedDate) {
+            return;
+        }
+        
+        $dateTime = Carbon::parse($this->selectedDate . ' ' . $time);
+        $now = Carbon::now();
+        
+        if ($dateTime->lt($now)) {
+            $this->addError('selectedTime', 'Cannot select past time slots. Please select a future time.');
+            return;
+        }
+        
         $this->selectedTime = $time;
         $this->currentStep = 2;
     }
@@ -117,7 +171,22 @@ class Show extends Component
         ]);
 
         try {
-            $dateTime = Carbon::parse($this->selectedDate . ' ' . $this->selectedTime);
+            // Final validation: prevent booking in the past
+            if (!$this->selectedDate || !$this->selectedTime) {
+                throw new \Exception('Please select a date and time for your appointment.');
+            }
+            
+            // Parse date/time in the coach's timezone
+            $coachTimezone = $this->service->user->timezone ?? 'Africa/Cairo';
+            $dateTime = Carbon::parse($this->selectedDate . ' ' . $this->selectedTime, $coachTimezone);
+            $now = Carbon::now($coachTimezone);
+            
+            if ($dateTime->lte($now)) {
+                throw new \Exception('Cannot book appointments in the past. Please select a future date and time.');
+            }
+            
+            // Convert to UTC for storage (Laravel will handle this automatically with the datetime cast)
+            $dateTime = $dateTime->utc();
 
             $this->appointment = $this->bookingService->createBooking([
                 'tenant_id' => $this->tenant->id,
@@ -150,15 +219,17 @@ class Show extends Component
         
         $calendarDays = [];
         $currentDate = $firstDayOfMonth->copy()->subDays($startDay);
+        $today = Carbon::today();
         
         for ($i = 0; $i < $daysToShow; $i++) {
             $dayOfWeek = $currentDate->dayOfWeek;
             $dateString = $currentDate->format('Y-m-d');
             $isCurrentMonth = $currentDate->month == $this->currentMonth;
             $isToday = $currentDate->isToday();
-            $isPast = $currentDate->isPast() && !$isToday;
+            // Past means before today (not including today)
+            $isPast = $currentDate->lt($today);
             
-            // Check if there's availability for this day
+            // Check if there's availability for this day (only for current/future dates in current month)
             $hasAvailability = false;
             if ($isCurrentMonth && !$isPast) {
                 $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
@@ -168,6 +239,13 @@ class Show extends Component
                     ->exists();
             }
             
+            // Check if this date is selected - compare dates in the same format
+            $isSelected = false;
+            if (!empty($this->selectedDate)) {
+                $selectedDateFormatted = Carbon::parse($this->selectedDate)->format('Y-m-d');
+                $isSelected = $selectedDateFormatted === $dateString;
+            }
+            
             $calendarDays[] = [
                 'date' => $dateString,
                 'day' => $currentDate->day,
@@ -175,7 +253,7 @@ class Show extends Component
                 'isToday' => $isToday,
                 'isPast' => $isPast,
                 'hasAvailability' => $hasAvailability,
-                'isSelected' => $this->selectedDate === $dateString,
+                'isSelected' => $isSelected,
             ];
             
             $currentDate->addDay();
@@ -217,11 +295,222 @@ class Show extends Component
 
     protected function loadTimeSlots(string $date)
     {
-        $this->availableTimeSlots = $this->availabilityService->getAvailableTimeSlots(
+        $allSlots = $this->availabilityService->getAvailableTimeSlots(
             $this->tenant->id,
             $this->service->id,
             $date
         );
+        
+        // Filter out past time slots if the selected date is today
+        $selectedDate = Carbon::parse($date);
+        $today = Carbon::today();
+        $now = Carbon::now();
+        
+        if ($selectedDate->isToday()) {
+            // Filter out time slots that have already passed
+            $filteredSlots = array_filter($allSlots, function($slot) use ($date, $now) {
+                $slotDateTime = Carbon::parse($date . ' ' . $slot['start']);
+                return $slotDateTime->gt($now);
+            });
+            $this->availableTimeSlots = array_values($filteredSlots); // Re-index array
+        } else {
+            // For future dates, show all available slots
+            $this->availableTimeSlots = $allSlots;
+        }
+        
+        // If no available time slots, find the next date with available slots
+        // Only do this if we're not already in a recursive call (prevent infinite loops)
+        if (empty($this->availableTimeSlots) && $this->selectedDate === $date) {
+            $nextAvailableDate = $this->findNextAvailableDate($date);
+            if ($nextAvailableDate && $nextAvailableDate !== $date) {
+                $nextDate = Carbon::parse($nextAvailableDate);
+                
+                // Update calendar month if needed
+                if ($nextDate->month != $this->currentMonth || $nextDate->year != $this->currentYear) {
+                    $this->currentMonth = $nextDate->month;
+                    $this->currentYear = $nextDate->year;
+                }
+                
+                // Set selected date and regenerate calendar to show it as selected
+                $this->selectedDate = $nextAvailableDate;
+                $this->generateCalendar();
+                // Load time slots for the new date (this will set availableTimeSlots)
+                $this->loadTimeSlots($nextAvailableDate);
+            }
+        }
+    }
+    
+    protected function selectFirstAvailableDate()
+    {
+        $today = Carbon::today();
+        $todayDateString = $today->format('Y-m-d');
+        $now = Carbon::now();
+        $endDate = $today->copy()->addDays(90); // Search up to 90 days ahead
+        $currentDate = $today->copy(); // Always start from today
+        
+        // First, check today specifically - if it has slots, always select today
+        $todayDayOfWeek = $today->dayOfWeek;
+        $todayHasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+            ->where('user_id', $this->service->user_id)
+            ->where('day_of_week', $todayDayOfWeek)
+            ->where('is_active', true)
+            ->exists();
+        
+        if ($todayHasAvailability) {
+            $todaySlots = $this->availabilityService->getAvailableTimeSlots(
+                $this->tenant->id,
+                $this->service->id,
+                $todayDateString
+            );
+            
+            // Filter out past slots
+            $todaySlots = array_filter($todaySlots, function($slot) use ($todayDateString, $now) {
+                $slotDateTime = Carbon::parse($todayDateString . ' ' . $slot['start']);
+                return $slotDateTime->gt($now);
+            });
+            
+            // If today has available slots, always select today
+            if (!empty($todaySlots)) {
+                // Update calendar month if needed
+                if ($today->month != $this->currentMonth || $today->year != $this->currentYear) {
+                    $this->currentMonth = $today->month;
+                    $this->currentYear = $today->year;
+                }
+                
+                // Set selected date to today
+                $this->selectedDate = $todayDateString;
+                // Generate calendar to show today as selected
+                $this->generateCalendar();
+                // Load time slots
+                $this->loadTimeSlotsWithoutAutoMove($this->selectedDate);
+                
+                return;
+            }
+        }
+        
+        // If today doesn't have slots, find the next available date
+        while ($currentDate->lte($endDate)) {
+            // Skip today (already checked above) and past dates
+            if ($currentDate->lt($today) || $currentDate->isToday()) {
+                $currentDate->addDay();
+                continue;
+            }
+            
+            $dayOfWeek = $currentDate->dayOfWeek;
+            
+            // Check if there's availability for this day of week
+            $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                ->where('user_id', $this->service->user_id)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_active', true)
+                ->exists();
+            
+            if ($hasAvailability) {
+                // Check if this date has available time slots
+                $slots = $this->availabilityService->getAvailableTimeSlots(
+                    $this->tenant->id,
+                    $this->service->id,
+                    $currentDate->format('Y-m-d')
+                );
+                
+                // If we found slots, select this date
+                if (!empty($slots)) {
+                    // Update calendar month first if needed
+                    if ($currentDate->month != $this->currentMonth || $currentDate->year != $this->currentYear) {
+                        $this->currentMonth = $currentDate->month;
+                        $this->currentYear = $currentDate->year;
+                    }
+                    
+                    // Set selected date FIRST before generating calendar
+                    $this->selectedDate = $currentDate->format('Y-m-d');
+                    // Generate calendar to show the selected date
+                    $this->generateCalendar();
+                    // Load time slots - but don't auto-move if empty (already found slots above)
+                    $this->loadTimeSlotsWithoutAutoMove($this->selectedDate);
+                    
+                    return;
+                }
+            }
+            
+            $currentDate->addDay();
+        }
+    }
+    
+    protected function loadTimeSlotsWithoutAutoMove(string $date)
+    {
+        $allSlots = $this->availabilityService->getAvailableTimeSlots(
+            $this->tenant->id,
+            $this->service->id,
+            $date
+        );
+        
+        // Filter out past time slots if the selected date is today
+        $selectedDate = Carbon::parse($date);
+        $today = Carbon::today();
+        $now = Carbon::now();
+        
+        if ($selectedDate->isToday()) {
+            // Filter out time slots that have already passed
+            $filteredSlots = array_filter($allSlots, function($slot) use ($date, $now) {
+                $slotDateTime = Carbon::parse($date . ' ' . $slot['start']);
+                return $slotDateTime->gt($now);
+            });
+            $this->availableTimeSlots = array_values($filteredSlots); // Re-index array
+        } else {
+            // For future dates, show all available slots
+            $this->availableTimeSlots = $allSlots;
+        }
+    }
+    
+    protected function findNextAvailableDate(string $startDate): ?string
+    {
+        $start = Carbon::parse($startDate);
+        $today = Carbon::today();
+        $endDate = $today->copy()->addDays(90); // Search up to 90 days ahead
+        
+        // Start from the day after the selected date (or today if selected date is in the past)
+        $currentDate = $start->copy()->addDay();
+        if ($currentDate->lt($today)) {
+            $currentDate = $today->copy();
+        }
+        
+        while ($currentDate->lte($endDate)) {
+            $dayOfWeek = $currentDate->dayOfWeek;
+            
+            // Check if there's availability for this day of week
+            $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                ->where('user_id', $this->service->user_id)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_active', true)
+                ->exists();
+            
+            if ($hasAvailability) {
+                // Check if this date has available time slots
+                $slots = $this->availabilityService->getAvailableTimeSlots(
+                    $this->tenant->id,
+                    $this->service->id,
+                    $currentDate->format('Y-m-d')
+                );
+                
+                // Filter out past slots if today
+                if ($currentDate->isToday()) {
+                    $now = Carbon::now();
+                    $slots = array_filter($slots, function($slot) use ($currentDate, $now) {
+                        $slotDateTime = Carbon::parse($currentDate->format('Y-m-d') . ' ' . $slot['start']);
+                        return $slotDateTime->gt($now);
+                    });
+                }
+                
+                // If we found slots, return this date
+                if (!empty($slots)) {
+                    return $currentDate->format('Y-m-d');
+                }
+            }
+            
+            $currentDate->addDay();
+        }
+        
+        return null; // No available date found
     }
 
     public function getRemainingSpotsProperty(): ?int

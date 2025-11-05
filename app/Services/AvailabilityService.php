@@ -19,7 +19,11 @@ class AvailabilityService
             return [];
         }
 
-        $dateCarbon = Carbon::parse($date);
+        $user = $service->user;
+        $coachTimezone = $user->timezone ?? 'Africa/Cairo';
+
+        // Parse date in coach's timezone
+        $dateCarbon = Carbon::parse($date, $coachTimezone);
         $dayOfWeek = $dateCarbon->dayOfWeek; // 0-6
 
         // Get availability schedules for this day of week
@@ -36,19 +40,19 @@ class AvailabilityService
         $availableSlots = [];
 
         foreach ($schedules as $schedule) {
-            // Parse time strings properly
+            // Parse time strings properly in coach's timezone
             $startTimeStr = is_string($schedule->start_time) ? $schedule->start_time : $schedule->start_time->format('H:i:s');
             $endTimeStr = is_string($schedule->end_time) ? $schedule->end_time : $schedule->end_time->format('H:i:s');
             
-            $startTime = Carbon::parse($date . ' ' . $startTimeStr);
-            $endTime = Carbon::parse($date . ' ' . $endTimeStr);
+            $startTime = Carbon::parse($date . ' ' . $startTimeStr, $coachTimezone);
+            $endTime = Carbon::parse($date . ' ' . $endTimeStr, $coachTimezone);
             $currentTime = $startTime->copy();
 
             while ($currentTime->copy()->addMinutes($service->duration)->lte($endTime)) {
                 $slotStart = $currentTime->copy();
                 $slotEnd = $currentTime->copy()->addMinutes($service->duration);
 
-                // Check if this slot is available
+                // Check if this slot is available (convert to UTC for database comparison)
                 if ($this->isSlotAvailable($service, $slotStart, $slotEnd, $tenantId)) {
                     $availableSlots[] = [
                         'start' => $slotStart->format('H:i'),
@@ -69,12 +73,16 @@ class AvailabilityService
      */
     protected function isSlotAvailable(Service $service, Carbon $slotStart, Carbon $slotEnd, int $tenantId): bool
     {
+        // Convert to UTC for database comparison (database stores in UTC)
+        $slotStartUtc = $slotStart->copy()->utc();
+        $slotEndUtc = $slotEnd->copy()->utc();
+
         // For one-to-one services: check if any appointment exists for this time
         if ($service->type === 'one') {
             $exists = Appointment::where('tenant_id', $tenantId)
                 ->where('service_id', $service->id)
                 ->where('status', 'booked')
-                ->whereBetween('date_time', [$slotStart, $slotEnd->copy()->subSecond()])
+                ->whereBetween('date_time', [$slotStartUtc, $slotEndUtc->copy()->subSecond()])
                 ->exists();
 
             return !$exists;
@@ -85,7 +93,7 @@ class AvailabilityService
             $bookedCount = Appointment::where('tenant_id', $tenantId)
                 ->where('service_id', $service->id)
                 ->where('status', 'booked')
-                ->whereBetween('date_time', [$slotStart, $slotEnd->copy()->subSecond()])
+                ->whereBetween('date_time', [$slotStartUtc, $slotEndUtc->copy()->subSecond()])
                 ->count();
 
             return $bookedCount < $service->max_spots;
@@ -104,13 +112,14 @@ class AvailabilityService
             return 0;
         }
 
-        $slotStart = $dateTime->copy();
-        $slotEnd = $dateTime->copy()->addMinutes($service->duration);
+        // Convert to UTC for database comparison (database stores in UTC)
+        $slotStartUtc = $dateTime->copy()->utc();
+        $slotEndUtc = $dateTime->copy()->addMinutes($service->duration)->utc();
 
         $bookedCount = Appointment::where('tenant_id', $tenantId)
             ->where('service_id', $serviceId)
             ->where('status', 'booked')
-            ->whereBetween('date_time', [$slotStart, $slotEnd->copy()->subSecond()])
+            ->whereBetween('date_time', [$slotStartUtc, $slotEndUtc->copy()->subSecond()])
             ->count();
 
         return max(0, $service->max_spots - $bookedCount);

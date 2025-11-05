@@ -1,14 +1,14 @@
-<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-7xl mx-auto">
+<div class="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl w-full mx-auto">
         <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-1">
                 @if($service)
                     {{ $service->name }}
                 @endif
             </h1>
             @if($service && $service->description)
-                <p class="text-gray-600">{{ $service->description }}</p>
+                <p class="text-sm text-gray-600">{{ $service->description }}</p>
             @endif
         </div>
 
@@ -17,7 +17,7 @@
             <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-0">
                     <!-- Left Side: Calendar -->
-                    <div class="p-4 border-r border-gray-200">
+                    <div class="p-3 border-r border-gray-200">
                         <div class="mb-4">
                             <div class="flex items-center justify-between mb-3">
                                 <button
@@ -73,6 +73,9 @@
                                                 text-gray-400 cursor-not-allowed bg-transparent
                                             @endif
                                         "
+                                        @if($day['isSelected'])
+                                            wire:key="selected-{{ $day['date'] }}"
+                                        @endif
                                         @if(!$day['isCurrentMonth'] || $day['isPast'] || !$day['hasAvailability'])
                                             disabled
                                         @endif
@@ -85,8 +88,8 @@
 
                         <!-- Service Info -->
                         @if($service)
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <div class="space-y-1.5 text-xs">
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <div class="space-y-1 text-xs">
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Duration:</span>
                                         <span class="font-semibold">{{ $service->duration }} min</span>
@@ -111,38 +114,55 @@
                     </div>
 
                     <!-- Right Side: Time Slots -->
-                    <div class="p-6 bg-gray-50">
+                    <div class="p-4 bg-gray-50 flex flex-col" style="height: 500px;">
                         @if($selectedDate)
-                            <div class="mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">
+                            <!-- Fixed Header -->
+                            <div class="mb-3 flex-shrink-0">
+                                <h3 class="text-base font-semibold text-gray-900 mb-1">
                                     {{ Carbon\Carbon::parse($selectedDate)->format('l, F d, Y') }}
                                 </h3>
-                                <p class="text-sm text-gray-600">Select a time slot</p>
+                                <p class="text-xs text-gray-600">Select a time slot</p>
                             </div>
 
                             @if(empty($availableTimeSlots))
-                                <div class="text-center py-12">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="text-center py-8 flex-shrink-0">
+                                    <svg class="mx-auto h-10 w-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                    <p class="text-gray-500 font-medium">No available time slots</p>
-                                    <p class="text-sm text-gray-400 mt-1">Please select another date</p>
+                                    <p class="text-sm text-gray-500 font-medium">No available time slots</p>
+                                    <p class="text-xs text-gray-400 mt-1">Please select another date</p>
                                 </div>
                             @else
-                                <div class="space-y-2 max-h-[500px] overflow-y-auto">
+                                <!-- Scrollable Time Slots List -->
+                                <div class="space-y-1.5 overflow-y-auto flex-1 min-h-0">
                                     @foreach($availableTimeSlots as $slot)
+                                        @php
+                                            $slotDateTime = \Carbon\Carbon::parse($selectedDate . ' ' . $slot['start']);
+                                            $isPast = $slotDateTime->lt(\Carbon\Carbon::now());
+                                        @endphp
                                         <button
                                             type="button"
-                                            wire:click="selectTime('{{ $slot['start'] }}')"
-                                            class="w-full p-4 text-left border-2 rounded-lg transition
-                                                {{ $selectedTime === $slot['start'] 
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700' 
-                                                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700' 
-                                                }}"
+                                            @if(!$isPast)
+                                                wire:click="selectTime('{{ $slot['start'] }}')"
+                                            @endif
+                                            class="w-full p-2.5 text-left border-2 rounded-lg transition text-sm
+                                                @if($isPast)
+                                                    border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50
+                                                @elseif($selectedTime === $slot['start'])
+                                                    border-blue-600 bg-blue-50 text-blue-700
+                                                @else
+                                                    border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 cursor-pointer
+                                                @endif
+                                            "
+                                            @if($isPast)
+                                                disabled
+                                            @endif
                                         >
                                             <div class="flex items-center justify-between">
-                                                <span class="font-semibold">{{ $slot['display'] }}</span>
-                                                @if($service && $service->type === 'group')
+                                                <span class="font-medium text-sm">{{ $slot['display'] }}</span>
+                                                @if($isPast)
+                                                    <span class="text-xs text-gray-400">Past</span>
+                                                @elseif($service && $service->type === 'group')
                                                     <span class="text-xs text-gray-500">
                                                         @if($this->remainingSpots)
                                                             {{ $this->remainingSpots }} spots left
@@ -157,12 +177,12 @@
                                 </div>
                             @endif
                         @else
-                            <div class="text-center py-12">
-                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="text-center py-8">
+                                <svg class="mx-auto h-10 w-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                <p class="text-gray-500 font-medium">Select a date</p>
-                                <p class="text-sm text-gray-400 mt-1">Choose a date from the calendar to view available time slots</p>
+                                <p class="text-sm text-gray-500 font-medium">Select a date</p>
+                                <p class="text-xs text-gray-400 mt-1">Choose a date from the calendar to view available time slots</p>
                             </div>
                         @endif
                     </div>
