@@ -9,10 +9,10 @@
                     </a>
                 </div>
                 <div class="flex items-center space-x-4 rtl:space-x-reverse">
-                    <a href="/login" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                    <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">
                         {{ __('landing.sign_in') }}
                     </a>
-                    <a href="/register" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                    <a href="{{ route('register') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
                         {{ __('landing.get_started') }}
                     </a>
                     <div class="flex items-center space-x-2 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4">
@@ -35,7 +35,7 @@
                 {{ __('landing.hero_subtitle') }}
             </p>
             <div class="flex justify-center space-x-4 rtl:space-x-reverse">
-                <a href="/register" class="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700 transition shadow-lg">
+                <a href="{{ route('register') }}" class="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700 transition shadow-lg">
                     {{ __('landing.start_free_trial') }}
                 </a>
                 <a href="#features" class="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-50 transition">
@@ -117,7 +117,7 @@
             <p class="text-xl text-blue-100 mb-8">
                 {{ __('landing.cta_subtitle') }}
             </p>
-            <a href="/register" class="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-100 transition shadow-lg">
+            <a href="{{ route('register') }}" class="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-100 transition shadow-lg">
                 {{ __('landing.get_started_now') }}
             </a>
         </div>
