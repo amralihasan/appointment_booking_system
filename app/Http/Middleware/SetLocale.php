@@ -16,14 +16,17 @@ class SetLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Get locale from user preference if authenticated
-        $locale = 'en'; // default
+        // Get locale from query parameter first (for language switcher)
+        $locale = $request->query('locale');
         
-        if (auth()->check()) {
+        // If no query parameter, get from user preference if authenticated
+        if (!$locale && auth()->check()) {
             $user = auth()->user();
-            $locale = $user->language ?? 'en';
-        } else {
-            // Check session or accept-language header
+            $locale = $user->language ?? null;
+        }
+        
+        // If still no locale, check session or accept-language header
+        if (!$locale) {
             $locale = session('locale', $request->getPreferredLanguage(['en', 'ar']) ?? 'en');
         }
         
@@ -31,6 +34,9 @@ class SetLocale
         if (!in_array($locale, ['en', 'ar'])) {
             $locale = 'en';
         }
+        
+        // Store in session for persistence
+        session(['locale' => $locale]);
         
         App::setLocale($locale);
         $request->setLocale($locale);
