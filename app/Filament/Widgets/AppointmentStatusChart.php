@@ -8,9 +8,14 @@ use Carbon\Carbon;
 
 class AppointmentStatusChart extends ChartWidget
 {
-    protected static ?string $heading = 'Appointments by Status';
+    protected static ?string $heading = null;
 
     protected static ?int $sort = 5;
+
+    public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable | null
+    {
+        return __('filament.appointments_by_status');
+    }
 
     public ?string $filter = null;
 
@@ -81,11 +86,11 @@ class AppointmentStatusChart extends ChartWidget
             }
         }
 
-        // Prepare chart data
+        // Prepare chart data with translated labels
         $labels = [
-            'booked' => 'Booked',
-            'canceled' => 'Canceled',
-            'completed' => 'Completed',
+            __('filament.booked'),
+            __('filament.canceled'),
+            __('filament.completed'),
         ];
 
         $data = [
@@ -97,7 +102,7 @@ class AppointmentStatusChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Appointments',
+                    'label' => __('filament.appointments'),
                     'data' => $data,
                     'backgroundColor' => [
                         'rgba(16, 185, 129, 0.5)', // green for booked

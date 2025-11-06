@@ -531,7 +531,7 @@ class Show extends Component
     {
         return view('livewire.booking.show')
             ->layout('livewire.layouts.booking-layout', [
-                'title' => $this->service ? $this->service->name . ' - Book Appointment' : 'Book Appointment',
+                'title' => $this->service ? $this->service->translated_name . ' - ' . __('common.book_appointment') : __('common.book_appointment'),
             ]);
     }
 }

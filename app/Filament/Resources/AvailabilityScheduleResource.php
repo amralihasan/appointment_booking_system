@@ -17,57 +17,74 @@ class AvailabilityScheduleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
-    protected static ?string $navigationLabel = 'Availability';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $modelLabel = 'Availability Schedule';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Availability Schedules';
+    protected static ?string $pluralModelLabel = null;
+
+    protected static bool $hasTitleCaseModelLabel = false;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.availability');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.availability_schedule');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.availability_schedules');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Schedule Information')
+                Forms\Components\Section::make(__('filament.schedule_information'))
                     ->schema([
                         Forms\Components\Select::make('day_of_week')
                             ->required()
                             ->options([
-                                0 => 'Sunday',
-                                1 => 'Monday',
-                                2 => 'Tuesday',
-                                3 => 'Wednesday',
-                                4 => 'Thursday',
-                                5 => 'Friday',
-                                6 => 'Saturday',
+                                0 => __('filament.sunday'),
+                                1 => __('filament.monday'),
+                                2 => __('filament.tuesday'),
+                                3 => __('filament.wednesday'),
+                                4 => __('filament.thursday'),
+                                5 => __('filament.friday'),
+                                6 => __('filament.saturday'),
                             ])
                             ->native(false)
-                            ->label('Day of Week')
-                            ->helperText('Select the day, then add multiple time slots below'),
+                            ->label(__('filament.day_of_week'))
+                            ->helperText(__('filament.select_day_helper')),
 
                         Forms\Components\Repeater::make('time_slots')
                             ->schema([
                                 Forms\Components\TimePicker::make('start_time')
                                     ->required()
                                     ->seconds(false)
-                                    ->label('Start Time'),
+                                    ->label(__('filament.start_time')),
 
                                 Forms\Components\TimePicker::make('end_time')
                                     ->required()
                                     ->seconds(false)
                                     ->after('start_time')
-                                    ->label('End Time'),
+                                    ->label(__('filament.end_time')),
 
                                 Forms\Components\Toggle::make('is_active')
                                     ->default(true)
-                                    ->label('Active'),
+                                    ->label(__('filament.active')),
                             ])
                             ->columns(3)
                             ->defaultItems(1)
-                            ->addActionLabel('Add Another Time Slot')
+                            ->addActionLabel(__('filament.add_another_time_slot'))
                             ->itemLabel(fn (array $state): ?string => 
                                 $state['start_time'] && $state['end_time'] 
                                     ? $state['start_time'] . ' - ' . $state['end_time']
-                                    : 'New Time Slot'
+                                    : __('filament.new_time_slot')
                             )
                             ->required()
                             ->minItems(1)
@@ -75,8 +92,8 @@ class AvailabilityScheduleResource extends Resource
 
                         Forms\Components\Toggle::make('is_active_global')
                             ->default(true)
-                            ->label('All slots active by default')
-                            ->helperText('This will set the default active status for all time slots'),
+                            ->label(__('filament.all_slots_active_by_default'))
+                            ->helperText(__('filament.all_slots_active_helper')),
                     ])
                     ->columns(1),
             ]);
@@ -85,25 +102,27 @@ class AvailabilityScheduleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading(__('filament-tables::table.empty.heading', ['model' => static::getPluralModelLabel()]))
+            ->emptyStateDescription(__('filament-tables::table.empty.description', ['model' => static::getPluralModelLabel()]))
             ->columns([
                 Tables\Columns\Layout\Split::make([
                     Tables\Columns\TextColumn::make('day_of_week')
                         ->formatStateUsing(fn (int $state): string => match ($state) {
-                            0 => 'Sunday',
-                            1 => 'Monday',
-                            2 => 'Tuesday',
-                            3 => 'Wednesday',
-                            4 => 'Thursday',
-                            5 => 'Friday',
-                            6 => 'Saturday',
-                            default => 'Unknown',
+                            0 => __('filament.sunday'),
+                            1 => __('filament.monday'),
+                            2 => __('filament.tuesday'),
+                            3 => __('filament.wednesday'),
+                            4 => __('filament.thursday'),
+                            5 => __('filament.friday'),
+                            6 => __('filament.saturday'),
+                            default => __('filament.unknown'),
                         })
                         ->sortable()
                         ->weight(\Filament\Support\Enums\FontWeight::Bold)
                         ->size(\Filament\Tables\Columns\TextColumn\TextColumnSize::Large),
 
                     Tables\Columns\TextColumn::make('time_slots_summary')
-                        ->label('Time Slots')
+                        ->label(__('filament.time_slots'))
                         ->getStateUsing(function ($record) {
                             $slots = AvailabilitySchedule::where('tenant_id', $record->tenant_id)
                                 ->where('user_id', $record->user_id)
@@ -114,7 +133,10 @@ class AvailabilityScheduleResource extends Resource
                             $count = $slots->count();
                             $activeCount = $slots->where('is_active', true)->count();
                             
-                            return "{$count} slot(s) • {$activeCount} active";
+                            $slotText = trans_choice('filament.n_slots', $count, ['count' => $count]);
+                            $activeText = trans_choice('filament.n_active_slots', $activeCount, ['count' => $activeCount]);
+                            
+                            return "{$slotText} • {$activeText}";
                         })
                         ->color('gray')
                         ->icon('heroicon-o-clock'),
@@ -126,22 +148,22 @@ class AvailabilityScheduleResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('day_of_week')
                     ->options([
-                        0 => 'Sunday',
-                        1 => 'Monday',
-                        2 => 'Tuesday',
-                        3 => 'Wednesday',
-                        4 => 'Thursday',
-                        5 => 'Friday',
-                        6 => 'Saturday',
+                        0 => __('filament.sunday'),
+                        1 => __('filament.monday'),
+                        2 => __('filament.tuesday'),
+                        3 => __('filament.wednesday'),
+                        4 => __('filament.thursday'),
+                        5 => __('filament.friday'),
+                        6 => __('filament.saturday'),
                     ]),
 
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active Status'),
+                    ->label(__('filament.active_status')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->label('Delete All Slots')
+                    ->label(__('filament.delete_all_slots'))
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         AvailabilitySchedule::where('tenant_id', $record->tenant_id)

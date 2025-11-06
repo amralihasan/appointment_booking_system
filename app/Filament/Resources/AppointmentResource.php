@@ -20,19 +20,37 @@ class AppointmentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
 
-    protected static ?string $navigationLabel = 'Appointments';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $modelLabel = 'Appointment';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Appointments';
+    protected static ?string $pluralModelLabel = null;
+
+    protected static bool $hasTitleCaseModelLabel = false;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.appointments');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.appointment');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.appointments');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Appointment Details')
+                Forms\Components\Section::make(__('filament.appointment_details'))
                     ->schema([
                         Forms\Components\Select::make('service_id')
+                            ->label(__('filament.service_name'))
                             ->relationship('service', 'name', modifyQueryUsing: fn (Builder $query) => $query->where('tenant_id', auth()->user()->tenant_id))
                             ->required()
                             ->searchable()
@@ -48,32 +66,36 @@ class AppointmentResource extends Resource
                             }),
 
                         Forms\Components\DateTimePicker::make('date_time')
+                            ->label(__('filament.date_time'))
                             ->required()
                             ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
                             ->native(false)
                             ->seconds(false),
 
                         Forms\Components\TextInput::make('duration')
+                            ->label(__('filament.duration'))
                             ->required()
                             ->numeric()
-                            ->suffix('minutes')
+                            ->suffix(__('common.minutes'))
                             ->disabled(),
 
                         Forms\Components\Select::make('status')
+                            ->label(__('filament.status'))
                             ->required()
                             ->options([
-                                'booked' => 'Booked',
-                                'canceled' => 'Canceled',
-                                'completed' => 'Completed',
+                                'booked' => __('filament.booked'),
+                                'canceled' => __('filament.canceled'),
+                                'completed' => __('filament.completed'),
                             ])
                             ->default('booked')
                             ->native(false),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Client Information')
+                Forms\Components\Section::make(__('filament.client_information'))
                     ->schema([
                         Forms\Components\Select::make('contact_id')
+                            ->label(__('filament.contact'))
                             ->relationship('contact', 'first_name', modifyQueryUsing: fn (Builder $query) => $query->where('tenant_id', auth()->user()->tenant_id))
                             ->searchable()
                             ->preload()
@@ -101,19 +123,23 @@ class AppointmentResource extends Resource
                             }),
 
                         Forms\Components\TextInput::make('client_name')
+                            ->label(__('filament.client_name'))
                             ->required()
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('client_phone')
+                            ->label(__('filament.client_phone'))
                             ->required()
                             ->tel()
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('client_email')
+                            ->label(__('filament.client_email'))
                             ->email()
                             ->maxLength(255),
 
                         Forms\Components\Textarea::make('notes')
+                            ->label(__('filament.notes'))
                             ->rows(3)
                             ->columnSpanFull(),
                     ])
@@ -124,12 +150,16 @@ class AppointmentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading(__('filament-tables::table.empty.heading', ['model' => static::getPluralModelLabel()]))
+            ->emptyStateDescription(__('filament-tables::table.empty.description', ['model' => static::getPluralModelLabel()]))
             ->columns([
                 Tables\Columns\TextColumn::make('service.name')
+                    ->label(__('filament.service_name'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('client_name')
+                    ->label(__('filament.client_name'))
                     ->searchable()
                     ->sortable()
                     ->url(fn ($record) => $record->contact_id 
@@ -144,20 +174,20 @@ class AppointmentResource extends Resource
                     ->time('g:i A')
                     ->sortable()
                     ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
-                    ->label('Time'),
+                    ->label(__('filament.time')),
 
                 Tables\Columns\TextColumn::make('duration')
-                    ->label('Duration (min)')
+                    ->label(__('filament.duration_min'))
                     ->numeric()
                     ->sortable(),
 
                 Tables\Columns\SelectColumn::make('status')
-                    ->label('Status')
+                    ->label(__('filament.status'))
                     ->options(function ($record) {
                         $options = [
-                            'booked' => 'Booked',
-                            'canceled' => 'Canceled',
-                            'completed' => 'Completed',
+                            'booked' => __('filament.booked'),
+                            'canceled' => __('filament.canceled'),
+                            'completed' => __('filament.completed'),
                         ];
                         
                         // If status is canceled, remove 'booked' option
@@ -172,7 +202,7 @@ class AppointmentResource extends Resource
                     ->afterStateUpdated(function ($record, $state) {
                         // Prevent changing from 'canceled' to 'booked' (double check)
                         if ($record->status === 'canceled' && $state === 'booked') {
-                            throw new \Exception('Cannot change status from Canceled to Booked.');
+                            throw new \Exception(__('filament.cannot_change_status'));
                         }
                         $record->update(['status' => $state]);
                     })
@@ -186,11 +216,20 @@ class AppointmentResource extends Resource
             ->groups([
                 Group::make('date_time')
                     ->date()
-                    ->label('Date')
-                    ->getTitleFromRecordUsing(fn ($record) => Carbon::parse($record->date_time)
-                        ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
-                        ->locale(app()->getLocale())
-                        ->translatedFormat('l, F d, Y'))
+                    ->label(__('filament.date'))
+                    ->getTitleFromRecordUsing(function ($record) {
+                        // Return Carbon instance - Filament will format it with locale
+                        return Carbon::parse($record->date_time)
+                            ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
+                            ->locale(app()->getLocale());
+                    })
+                    ->getKeyFromRecordUsing(function ($record) {
+                        // Return parseable date key (Y-m-d format)
+                        $dateTime = $record->date_time instanceof Carbon 
+                            ? $record->date_time->copy()->utc() 
+                            : Carbon::parse($record->date_time, 'UTC')->utc();
+                        return $dateTime->format('Y-m-d');
+                    })
                     ->scopeQueryByKeyUsing(function (Builder $query, string $key) {
                         // Parse the date key (format: Y-m-d)
                         $date = Carbon::parse($key, 'UTC');
@@ -221,18 +260,19 @@ class AppointmentResource extends Resource
                         
                         $parts = [];
                         if ($booked > 0) {
-                            $parts[] = "{$booked} booked";
+                            $parts[] = "{$booked} " . __('filament.booked');
                         }
                         if ($canceled > 0) {
-                            $parts[] = "{$canceled} canceled";
+                            $parts[] = "{$canceled} " . __('filament.canceled');
                         }
                         if ($completed > 0) {
-                            $parts[] = "{$completed} completed";
+                            $parts[] = "{$completed} " . __('filament.completed');
                         }
                         
                         $statusText = !empty($parts) ? ' • ' . implode(' • ', $parts) : '';
+                        $totalText = $total === 1 ? __('filament.appointment') : __('filament.appointments');
                         
-                        return "{$total} appointment(s){$statusText}";
+                        return "{$total} {$totalText}{$statusText}";
                     })
                     ->collapsible()
                     ->orderQueryUsing(function (Builder $query, string $direction) {
@@ -244,23 +284,23 @@ class AppointmentResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'booked' => 'Booked',
-                        'canceled' => 'Canceled',
-                        'completed' => 'Completed',
+                        'booked' => __('filament.booked'),
+                        'canceled' => __('filament.canceled'),
+                        'completed' => __('filament.completed'),
                     ]),
 
                 Tables\Filters\SelectFilter::make('service_id')
                     ->relationship('service', 'name', modifyQueryUsing: fn (Builder $query) => $query->where('tenant_id', auth()->user()->tenant_id)),
 
                 Tables\Filters\Filter::make('show_past')
-                    ->label('Show Past Appointments'),
+                    ->label(__('filament.show_past_appointments')),
 
                 Tables\Filters\Filter::make('date_time')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label('From Date'),
+                            ->label(__('filament.from_date')),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label('Until Date'),
+                            ->label(__('filament.until_date')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

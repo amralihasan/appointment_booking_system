@@ -45,22 +45,22 @@ class AppointmentStats extends BaseWidget
             ->count();
 
         return [
-            Stat::make('Total Appointments', $totalAppointments)
-                ->description('All time')
+            Stat::make(__('filament.total_appointments'), $totalAppointments)
+                ->description(__('filament.all_time'))
                 ->descriptionIcon('heroicon-o-calendar'),
             
-            Stat::make('Upcoming Appointments', $upcomingAppointments)
-                ->description('Scheduled')
+            Stat::make(__('filament.upcoming_appointments'), $upcomingAppointments)
+                ->description(__('filament.scheduled'))
                 ->descriptionIcon('heroicon-o-clock')
                 ->color('success'),
             
-            Stat::make("Today's Appointments", $todayAppointments)
-                ->description('Today')
+            Stat::make(__('filament.todays_appointments'), $todayAppointments)
+                ->description(__('filament.today'))
                 ->descriptionIcon('heroicon-o-calendar-days')
                 ->color('warning'),
             
-            Stat::make('Active Services', $totalServices)
-                ->description('Services')
+            Stat::make(__('filament.active_services'), $totalServices)
+                ->description(__('filament.services'))
                 ->descriptionIcon('heroicon-o-briefcase')
                 ->color('info'),
         ];

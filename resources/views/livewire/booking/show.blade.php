@@ -4,11 +4,11 @@
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold text-gray-900 mb-1">
                 @if($service)
-                    {{ $service->name }}
+                    {{ $service->translated_name }}
                 @endif
             </h1>
-            @if($service && $service->description)
-                <p class="text-sm text-gray-600">{{ $service->description }}</p>
+            @if($service && $service->translated_description)
+                <p class="text-sm text-gray-600">{{ $service->translated_description }}</p>
             @endif
         </div>
 
@@ -45,7 +45,12 @@
 
                             <!-- Day Headers -->
                             <div class="grid grid-cols-7 gap-2 mb-2">
-                                @foreach(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $day)
+                                @php
+                                    $days = app()->getLocale() === 'ar' 
+                                        ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']
+                                        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                @endphp
+                                @foreach($days as $day)
                                     <div class="text-center text-xs font-medium text-gray-500 py-1">
                                         {{ $day }}
                                     </div>
@@ -91,20 +96,20 @@
                             <div class="mt-3 pt-3 border-t border-gray-200">
                                 <div class="space-y-1 text-xs">
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Duration:</span>
-                                        <span class="font-semibold">{{ $service->duration }} min</span>
+                                        <span class="text-gray-600">{{ __('common.duration') }}:</span>
+                                        <span class="font-semibold">{{ $service->duration }} {{ __('common.minutes') }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Price:</span>
-                                        <span class="font-semibold">EGP {{ number_format($service->price, 2) }}</span>
+                                        <span class="text-gray-600">{{ __('common.price') }}:</span>
+                                        <span class="font-semibold">{{ __('common.egp') }} {{ number_format($service->price, 2) }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Type:</span>
-                                        <span class="font-semibold">{{ $service->type === 'one' ? 'One-to-One' : 'Group' }}</span>
+                                        <span class="text-gray-600">{{ __('common.service') }}:</span>
+                                        <span class="font-semibold">{{ $service->type === 'one' ? __('common.one_to_one') : __('common.group') }}</span>
                                     </div>
                                     @if($service->type === 'group' && $service->max_spots)
                                         <div class="flex justify-between">
-                                            <span class="text-gray-600">Max Spots:</span>
+                                            <span class="text-gray-600">{{ __('common.max_spots') }}:</span>
                                             <span class="font-semibold">{{ $service->max_spots }}</span>
                                         </div>
                                     @endif
@@ -119,9 +124,9 @@
                             <!-- Fixed Header -->
                             <div class="mb-3 flex-shrink-0">
                                 <h3 class="text-base font-semibold text-gray-900 mb-1">
-                                    {{ Carbon\Carbon::parse($selectedDate)->format('l, F d, Y') }}
+                                    {{ Carbon\Carbon::parse($selectedDate)->locale(app()->getLocale())->translatedFormat('l, F d, Y') }}
                                 </h3>
-                                <p class="text-xs text-gray-600">Select a time slot</p>
+                                <p class="text-xs text-gray-600">{{ __('common.select_time') }}</p>
                             </div>
 
                             @if(empty($availableTimeSlots))
@@ -129,8 +134,8 @@
                                     <svg class="mx-auto h-10 w-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                    <p class="text-sm text-gray-500 font-medium">No available time slots</p>
-                                    <p class="text-xs text-gray-400 mt-1">Please select another date</p>
+                                    <p class="text-sm text-gray-500 font-medium">{{ __('common.no_available_slots') }}</p>
+                                    <p class="text-xs text-gray-400 mt-1">{{ __('common.select_another_date') }}</p>
                                 </div>
                             @else
                                 <!-- Scrollable Time Slots List -->
@@ -161,13 +166,13 @@
                                             <div class="flex items-center justify-between">
                                                 <span class="font-medium text-sm">{{ $slot['display'] }}</span>
                                                 @if($isPast)
-                                                    <span class="text-xs text-gray-400">Past</span>
+                                                    <span class="text-xs text-gray-400">{{ __('common.past') }}</span>
                                                 @elseif($service && $service->type === 'group')
                                                     <span class="text-xs text-gray-500">
                                                         @if($this->remainingSpots)
-                                                            {{ $this->remainingSpots }} spots left
+                                                            {{ $this->remainingSpots }} {{ __('common.spots_left') }}
                                                         @else
-                                                            Full
+                                                            {{ __('common.full') }}
                                                         @endif
                                                     </span>
                                                 @endif
@@ -181,8 +186,8 @@
                                 <svg class="mx-auto h-10 w-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                <p class="text-sm text-gray-500 font-medium">Select a date</p>
-                                <p class="text-xs text-gray-400 mt-1">Choose a date from the calendar to view available time slots</p>
+                                <p class="text-sm text-gray-500 font-medium">{{ __('common.select_date') }}</p>
+                                <p class="text-xs text-gray-400 mt-1">{{ __('common.choose_date_from_calendar') }}</p>
                             </div>
                         @endif
                     </div>
@@ -193,11 +198,11 @@
         <!-- Step 2: Client Information -->
         @if($currentStep == 2)
             <div class="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
-                <h2 class="text-xl font-semibold mb-4">Your Information</h2>
+                <h2 class="text-xl font-semibold mb-4">{{ __('common.client_information') }}</h2>
 
                 <div class="mb-4 p-3 bg-blue-50 rounded-lg">
                     <p class="text-sm text-gray-700">
-                        <strong>Selected:</strong> {{ \Carbon\Carbon::parse($selectedDate)->format('M d, Y') }} at {{ \Carbon\Carbon::parse($selectedTime)->format('g:i A') }}
+                        <strong>{{ __('common.selected') }}:</strong> {{ \Carbon\Carbon::parse($selectedDate)->locale(app()->getLocale())->translatedFormat('M d, Y') }} {{ __('common.at') }} {{ \Carbon\Carbon::parse($selectedTime)->format('g:i A') }}
                     </p>
                 </div>
 
@@ -206,7 +211,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    First Name <span class="text-red-500">*</span>
+                                    {{ __('common.first_name') }} <span class="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -219,7 +224,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Last Name <span class="text-red-500">*</span>
+                                    {{ __('common.last_name') }} <span class="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -233,7 +238,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Phone <span class="text-red-500">*</span>
+                                {{ __('common.phone') }} <span class="text-red-500">*</span>
                             </label>
                             <input
                                 type="tel"
@@ -246,7 +251,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Email (Optional)
+                                {{ __('common.email') }} ({{ __('common.optional') }})
                             </label>
                             <input
                                 type="email"
@@ -258,7 +263,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Additional Notes (Optional)
+                                {{ __('common.notes') }} ({{ __('common.optional') }})
                             </label>
                             <textarea
                                 wire:model.blur="notes"
@@ -280,13 +285,13 @@
                             wire:click="goBackToStep1"
                             class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
                         >
-                            Back
+                            {{ __('common.back') }}
                         </button>
                         <button
                             type="submit"
                             class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
                         >
-                            Confirm Booking
+                            {{ __('common.confirm_booking') }}
                         </button>
                     </div>
                 </form>
@@ -302,42 +307,42 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-                    <p class="text-gray-600">Your appointment has been successfully booked.</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ __('common.booking_confirmed') }}!</h2>
+                    <p class="text-gray-600">{{ __('common.booking_success_message') }}</p>
                 </div>
 
                 <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                    <h3 class="font-semibold mb-4">Booking Details</h3>
+                    <h3 class="font-semibold mb-4">{{ __('common.booking_details') }}</h3>
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Service:</span>
-                            <span class="font-semibold">{{ $service->name }}</span>
+                            <span class="text-gray-600">{{ __('common.service') }}:</span>
+                            <span class="font-semibold">{{ $service->translated_name }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Date & Time:</span>
-                            <span class="font-semibold">{{ $appointment->date_time->format('M d, Y g:i A') }}</span>
+                            <span class="text-gray-600">{{ __('common.date') }} & {{ __('common.time') }}:</span>
+                            <span class="font-semibold">{{ $appointment->date_time->locale(app()->getLocale())->translatedFormat('M d, Y g:i A') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Duration:</span>
-                            <span class="font-semibold">{{ $appointment->duration }} minutes</span>
+                            <span class="text-gray-600">{{ __('common.duration') }}:</span>
+                            <span class="font-semibold">{{ $appointment->duration }} {{ __('common.minutes') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Client:</span>
+                            <span class="text-gray-600">{{ __('common.client') }}:</span>
                             <span class="font-semibold">{{ $appointment->client_name }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Phone:</span>
+                            <span class="text-gray-600">{{ __('common.phone') }}:</span>
                             <span class="font-semibold">{{ $appointment->client_phone }}</span>
                         </div>
                         @if($appointment->client_email)
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Email:</span>
+                                <span class="text-gray-600">{{ __('common.email') }}:</span>
                                 <span class="font-semibold">{{ $appointment->client_email }}</span>
                             </div>
                         @endif
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Status:</span>
-                            <span class="font-semibold text-green-600">Booked</span>
+                            <span class="text-gray-600">{{ __('common.status') }}:</span>
+                            <span class="font-semibold text-green-600">{{ __('common.booked') }}</span>
                         </div>
                     </div>
                 </div>

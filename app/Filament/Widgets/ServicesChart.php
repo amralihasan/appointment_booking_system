@@ -9,9 +9,14 @@ use Carbon\Carbon;
 
 class ServicesChart extends ChartWidget
 {
-    protected static ?string $heading = 'Most Used Services';
+    protected static ?string $heading = null;
 
     protected static ?int $sort = 2;
+
+    public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable | null
+    {
+        return __('filament.most_used_services');
+    }
 
     public ?string $filter = null;
 
@@ -97,7 +102,7 @@ class ServicesChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Appointments',
+                    'label' => __('filament.appointments'),
                     'data' => $data,
                     'backgroundColor' => [
                         'rgba(59, 130, 246, 0.5)', // blue

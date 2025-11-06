@@ -58,4 +58,26 @@ class Service extends Model
     {
         return $query->where('tenant_id', $tenantId);
     }
+
+    /**
+     * Get the translated name for the current locale
+     */
+    public function getTranslatedNameAttribute(): string
+    {
+        $locale = app()->getLocale();
+        $translation = $this->translations()->where('locale', $locale)->first();
+        
+        return $translation ? $translation->name : $this->name;
+    }
+
+    /**
+     * Get the translated description for the current locale
+     */
+    public function getTranslatedDescriptionAttribute(): ?string
+    {
+        $locale = app()->getLocale();
+        $translation = $this->translations()->where('locale', $locale)->first();
+        
+        return $translation ? $translation->description : $this->description;
+    }
 }

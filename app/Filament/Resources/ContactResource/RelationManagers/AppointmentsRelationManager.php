@@ -16,13 +16,19 @@ class AppointmentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'appointments';
 
-    protected static ?string $title = 'Appointments';
+    protected static ?string $title = null;
+
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.appointments');
+    }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('service_id')
+                    ->label(__('filament.service_name'))
                     ->relationship('service', 'name', modifyQueryUsing: fn (Builder $query) => $query->where('tenant_id', auth()->user()->tenant_id))
                     ->required()
                     ->searchable()
@@ -38,28 +44,32 @@ class AppointmentsRelationManager extends RelationManager
                     }),
 
                 Forms\Components\DateTimePicker::make('date_time')
+                    ->label(__('filament.date_time'))
                     ->required()
                     ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
                     ->native(false)
                     ->seconds(false),
 
                 Forms\Components\TextInput::make('duration')
+                    ->label(__('filament.duration'))
                     ->required()
                     ->numeric()
-                    ->suffix('minutes')
+                    ->suffix(__('common.minutes'))
                     ->disabled(),
 
-                Forms\Components\Select::make('status')
-                    ->required()
-                    ->options([
-                        'booked' => 'Booked',
-                        'canceled' => 'Canceled',
-                        'completed' => 'Completed',
-                    ])
+                        Forms\Components\Select::make('status')
+                            ->label(__('filament.status'))
+                            ->required()
+                            ->options([
+                                'booked' => __('filament.booked'),
+                                'canceled' => __('filament.canceled'),
+                                'completed' => __('filament.completed'),
+                            ])
                     ->default('booked')
                     ->native(false),
 
                 Forms\Components\Textarea::make('notes')
+                    ->label(__('filament.notes'))
                     ->rows(3)
                     ->columnSpanFull(),
             ]);
@@ -69,14 +79,16 @@ class AppointmentsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('client_name')
+            ->emptyStateHeading(__('filament-tables::table.empty.heading', ['model' => __('filament.appointments')]))
+            ->emptyStateDescription(__('filament-tables::table.empty.description', ['model' => __('filament.appointments')]))
             ->columns([
                 Tables\Columns\TextColumn::make('service.name')
-                    ->label('Service')
+                    ->label(__('filament.service_name'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('date_time')
-                    ->label('Time')
+                    ->label(__('filament.time'))
                     ->getStateUsing(function ($record) {
                         $start = Carbon::parse($record->date_time)
                             ->timezone(auth()->user()->timezone ?? 'Africa/Cairo');
@@ -87,17 +99,17 @@ class AppointmentsRelationManager extends RelationManager
                     ->searchable(false),
 
                 Tables\Columns\TextColumn::make('duration')
-                    ->label('Duration (min)')
+                    ->label(__('filament.duration_min'))
                     ->numeric()
                     ->sortable(),
 
                     Tables\Columns\SelectColumn::make('status')
-                        ->label('Status')
+                        ->label(__('filament.status'))
                         ->options(function ($record) {
                             $options = [
-                                'booked' => 'Booked',
-                                'canceled' => 'Canceled',
-                                'completed' => 'Completed',
+                                'booked' => __('filament.booked'),
+                                'canceled' => __('filament.canceled'),
+                                'completed' => __('filament.completed'),
                             ];
                             
                             // If status is canceled, remove 'booked' option
@@ -112,25 +124,34 @@ class AppointmentsRelationManager extends RelationManager
                         ->afterStateUpdated(function ($record, $state) {
                             // Prevent changing from 'canceled' to 'booked' (double check)
                             if ($record->status === 'canceled' && $state === 'booked') {
-                                throw new \Exception('Cannot change status from Canceled to Booked.');
+                                throw new \Exception(__('filament.cannot_change_status'));
                             }
                             $record->update(['status' => $state]);
                         })
                         ->disabled(fn ($record) => $record->status === 'completed'),
 
                 Tables\Columns\TextColumn::make('notes')
-                    ->label('Notes')
+                    ->label(__('filament.notes'))
                     ->limit(50)
                     ->tooltip(fn ($record) => $record->notes),
             ])
             ->groups([
                 Group::make('date_time')
                     ->date()
-                    ->label('Date')
-                    ->getTitleFromRecordUsing(fn ($record) => Carbon::parse($record->date_time)
-                        ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
-                        ->locale(app()->getLocale())
-                        ->translatedFormat('d F Y'))
+                    ->label(__('filament.date'))
+                    ->getTitleFromRecordUsing(function ($record) {
+                        // Return Carbon instance - Filament will format it with locale
+                        return Carbon::parse($record->date_time)
+                            ->timezone(auth()->user()->timezone ?? 'Africa/Cairo')
+                            ->locale(app()->getLocale());
+                    })
+                    ->getKeyFromRecordUsing(function ($record) {
+                        // Return parseable date key (Y-m-d format)
+                        $dateTime = $record->date_time instanceof Carbon 
+                            ? $record->date_time->copy()->utc() 
+                            : Carbon::parse($record->date_time, 'UTC')->utc();
+                        return $dateTime->format('Y-m-d');
+                    })
                     ->collapsible()
                     ->orderQueryUsing(function (Builder $query, string $direction) {
                         // Sort groups by date, nearest first (ascending)
@@ -141,12 +162,12 @@ class AppointmentsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'booked' => 'Booked',
-                        'canceled' => 'Canceled',
-                        'completed' => 'Completed',
+                        'booked' => __('filament.booked'),
+                        'canceled' => __('filament.canceled'),
+                        'completed' => __('filament.completed'),
                     ]),
                 Tables\Filters\Filter::make('show_past')
-                    ->label('Show Past Appointments'),
+                    ->label(__('filament.show_past_appointments')),
             ])
             ->modifyQueryUsing(function (Builder $query) {
                 // Default: show only incoming appointments (date_time >= now)

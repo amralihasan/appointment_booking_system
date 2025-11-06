@@ -16,7 +16,7 @@ class EditAvailabilitySchedule extends EditRecord
     {
         return [
             Actions\DeleteAction::make()
-                ->label('Delete All Slots for This Day')
+                ->label(__('filament.delete_all_slots_for_day'))
                 ->requiresConfirmation()
                 ->action(function () {
                     $record = $this->record;

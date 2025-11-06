@@ -18,67 +18,91 @@ class ServiceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?string $navigationLabel = 'Services';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $modelLabel = 'Service';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Services';
+    protected static ?string $pluralModelLabel = null;
+
+    protected static bool $hasTitleCaseModelLabel = false;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.services');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.service');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.services');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Service Information')
+                Forms\Components\Section::make(__('filament.service_information'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
+                            ->label(__('filament.name'))
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', Str::slug($state))),
 
                         Forms\Components\Textarea::make('description')
+                            ->label(__('filament.description'))
                             ->rows(3)
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('slug')
+                            ->label(__('filament.slug'))
                             ->required()
                             ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule, $get) {
                                 return $rule->where('tenant_id', auth()->user()->tenant_id);
                             })
                             ->maxLength(255)
-                            ->helperText('Used in booking URL: domain-name.coach-name/service-name'),
+                            ->helperText(__('filament.booking_url_helper')),
 
                         Forms\Components\TextInput::make('price')
+                            ->label(__('filament.price'))
                             ->required()
                             ->numeric()
                             ->prefix('EGP')
                             ->default(0),
 
                         Forms\Components\TextInput::make('duration')
+                            ->label(__('filament.duration'))
                             ->required()
                             ->numeric()
-                            ->suffix('minutes')
+                            ->suffix(__('common.minutes'))
                             ->default(60),
 
                         Forms\Components\Select::make('type')
+                            ->label(__('filament.type'))
                             ->required()
                             ->options([
-                                'one' => 'One-to-One',
-                                'group' => 'Group',
+                                'one' => __('filament.one_to_one'),
+                                'group' => __('filament.group'),
                             ])
                             ->live()
                             ->default('one'),
 
                         Forms\Components\TextInput::make('max_spots')
+                            ->label(__('filament.max_spots'))
                             ->numeric()
                             ->minValue(2)
                             ->required(fn (Forms\Get $get) => $get('type') === 'group')
                             ->visible(fn (Forms\Get $get) => $get('type') === 'group')
-                            ->helperText('Required for group services'),
+                            ->helperText(__('filament.group_service_helper')),
 
                         Forms\Components\Toggle::make('is_active')
                             ->default(true)
-                            ->label('Active'),
+                            ->label(__('filament.active')),
                     ])
                     ->columns(2),
             ]);
@@ -87,12 +111,16 @@ class ServiceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading(__('filament-tables::table.empty.heading', ['model' => static::getPluralModelLabel()]))
+            ->emptyStateDescription(__('filament-tables::table.empty.description', ['model' => static::getPluralModelLabel()]))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label(__('filament.name'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'one' => 'success',
@@ -100,33 +128,35 @@ class ServiceResource extends Resource
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'one' => 'One-to-One',
-                        'group' => 'Group',
+                        'one' => __('filament.one_to_one'),
+                        'group' => __('filament.group'),
                         default => $state,
                     }),
 
                 Tables\Columns\TextColumn::make('max_spots')
-                    ->label('Max Spots')
+                    ->label(__('filament.max_spots'))
                     ->numeric()
                     ->default('N/A')
                     ->visible(fn ($record) => $record?->type === 'group'),
 
                 Tables\Columns\TextColumn::make('price')
+                    ->label(__('filament.price'))
                     ->money('EGP')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('duration')
-                    ->label('Duration (min)')
+                    ->label(__('filament.duration_min'))
                     ->numeric()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('slug')
+                    ->label(__('filament.slug'))
                     ->searchable()
                     ->copyable(),
 
                 Tables\Columns\TextColumn::make('booking_preview')
-                    ->label('Preview')
-                    ->state('View')
+                    ->label(__('filament.preview'))
+                    ->state(__('filament.preview'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('primary')
                     ->url(fn ($record) => route('booking.show', [
@@ -134,12 +164,12 @@ class ServiceResource extends Resource
                         'serviceSlug' => $record->slug,
                     ]))
                     ->openUrlInNewTab()
-                    ->tooltip('Open booking preview in new tab')
+                    ->tooltip(__('filament.open_booking_preview'))
                     ->sortable(false),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active'),
+                    ->label(__('filament.active')),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -149,12 +179,12 @@ class ServiceResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'one' => 'One-to-One',
-                        'group' => 'Group',
+                        'one' => __('filament.one_to_one'),
+                        'group' => __('filament.group'),
                     ]),
 
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active Status'),
+                    ->label(__('filament.active_status')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

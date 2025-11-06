@@ -8,9 +8,14 @@ use Carbon\Carbon;
 
 class AppointmentsByDayChart extends ChartWidget
 {
-    protected static ?string $heading = 'Appointments by Day of Week';
+    protected static ?string $heading = null;
 
     protected static ?int $sort = 3;
+
+    public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable | null
+    {
+        return __('filament.appointments_by_day');
+    }
 
     public ?string $filter = null;
 
@@ -66,35 +71,35 @@ class AppointmentsByDayChart extends ChartWidget
             ->whereBetween('date_time', [$monthStart, $monthEnd])
             ->get();
 
-        // Initialize day counts
-        $dayCounts = [
-            'Sunday' => 0,
-            'Monday' => 0,
-            'Tuesday' => 0,
-            'Wednesday' => 0,
-            'Thursday' => 0,
-            'Friday' => 0,
-            'Saturday' => 0,
-        ];
+        // Initialize day counts (using day of week numbers)
+        $dayCounts = [0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0];
 
         // Group appointments by day of week
         foreach ($appointments as $appointment) {
             $appointmentDate = Carbon::parse($appointment->date_time, 'UTC')
                 ->setTimezone($userTimezone);
-            $dayName = $appointmentDate->format('l'); // Full day name (Monday, Tuesday, etc.)
-            if (isset($dayCounts[$dayName])) {
-                $dayCounts[$dayName]++;
-            }
+            $dayOfWeek = $appointmentDate->dayOfWeek; // 0 = Sunday, 6 = Saturday
+            $dayCounts[$dayOfWeek]++;
         }
 
-        // Prepare chart data
-        $labels = array_keys($dayCounts);
+        // Prepare chart data with translated day names
+        $dayNames = [
+            0 => __('filament.sunday'),
+            1 => __('filament.monday'),
+            2 => __('filament.tuesday'),
+            3 => __('filament.wednesday'),
+            4 => __('filament.thursday'),
+            5 => __('filament.friday'),
+            6 => __('filament.saturday'),
+        ];
+        
+        $labels = array_values($dayNames);
         $data = array_values($dayCounts);
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Appointments',
+                    'label' => __('filament.appointments'),
                     'data' => $data,
                     'backgroundColor' => 'rgba(59, 130, 246, 0.5)',
                     'borderColor' => 'rgb(59, 130, 246)',

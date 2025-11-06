@@ -9,9 +9,14 @@ use Carbon\Carbon;
 
 class TopContactsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Top Contacts by Bookings';
+    protected static ?string $heading = null;
 
     protected static ?int $sort = 4;
+
+    public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable | null
+    {
+        return __('filament.top_contacts_by_bookings');
+    }
 
     public ?string $filter = null;
 
@@ -102,7 +107,7 @@ class TopContactsChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Bookings',
+                    'label' => __('filament.bookings'),
                     'data' => $data,
                     'backgroundColor' => [
                         'rgba(59, 130, 246, 0.5)', // blue

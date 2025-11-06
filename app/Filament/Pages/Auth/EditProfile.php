@@ -14,30 +14,30 @@ class EditProfile extends BaseEditProfile
         return $form
             ->schema([
                 TextInput::make('first_name')
-                    ->label('First Name')
+                    ->label(__('filament.first_name'))
                     ->required()
                     ->maxLength(255)
                     ->autofocus(),
                 
                 TextInput::make('last_name')
-                    ->label('Last Name')
+                    ->label(__('filament.last_name'))
                     ->required()
                     ->maxLength(255),
                 
                 $this->getEmailFormComponent(),
                 
                 TextInput::make('mobile')
-                    ->label('Mobile')
+                    ->label(__('filament.mobile'))
                     ->tel()
                     ->maxLength(20),
                 
                 TextInput::make('whatsapp')
-                    ->label('WhatsApp')
+                    ->label(__('filament.whatsapp'))
                     ->tel()
                     ->maxLength(20),
                 
                 Select::make('timezone')
-                    ->label('Timezone')
+                    ->label(__('filament.timezone'))
                     ->options([
                         'Africa/Cairo' => 'Cairo (GMT+2)',
                         'Africa/Casablanca' => 'Casablanca (GMT+1)',
@@ -72,10 +72,10 @@ class EditProfile extends BaseEditProfile
                     ->searchable(),
                 
                 Select::make('language')
-                    ->label('Language')
+                    ->label(__('filament.language'))
                     ->options([
-                        'en' => 'English',
-                        'ar' => 'Arabic',
+                        'en' => __('filament.english'),
+                        'ar' => __('filament.arabic'),
                     ])
                     ->default('en'),
                 
