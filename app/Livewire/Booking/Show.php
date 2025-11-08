@@ -35,6 +35,7 @@ class Show extends Component
     public string $clientPhone = '';
     public ?string $clientEmail = null;
     public ?string $notes = null;
+    public array $questionAnswers = [];
 
     // Step 3: Confirmation
     public ?\App\Models\Appointment $appointment = null;
@@ -54,14 +55,27 @@ class Show extends Component
         $this->serviceSlug = $serviceSlug;
 
         // Load tenant and service
+        // Allow both 'active' and 'trial' status tenants
         $this->tenant = \App\Models\Tenant::where('slug', $tenantSlug)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'trial'])
             ->firstOrFail();
 
         $this->service = Service::where('tenant_id', $this->tenant->id)
             ->where('slug', $serviceSlug)
             ->where('is_active', true)
+            ->with('questions')
             ->firstOrFail();
+        
+        // Initialize question answers
+        if ($this->service->questions) {
+            foreach ($this->service->questions as $question) {
+                if ($question->field_type === 'select_multiple') {
+                    $this->questionAnswers[$question->id] = [];
+                } else {
+                    $this->questionAnswers[$question->id] = '';
+                }
+            }
+        }
 
         // Initialize calendar to current month
         $this->currentMonth = Carbon::now()->month;
@@ -163,12 +177,39 @@ class Show extends Component
 
     public function submitBooking()
     {
-        $this->validate([
+        $rules = [
             'clientFirstName' => 'required|string|max:255',
             'clientLastName' => 'required|string|max:255',
             'clientPhone' => 'required|string|max:255',
             'clientEmail' => 'nullable|email|max:255',
-        ]);
+        ];
+
+        // Add validation rules for required questions
+        if ($this->service && $this->service->questions) {
+            foreach ($this->service->questions as $question) {
+                if ($question->is_required) {
+                    if ($question->field_type === 'select_multiple') {
+                        $rules['questionAnswers.' . $question->id] = 'required|array|min:1';
+                    } elseif ($question->field_type === 'email') {
+                        $rules['questionAnswers.' . $question->id] = 'required|email|max:255';
+                    } elseif ($question->field_type === 'number') {
+                        $rules['questionAnswers.' . $question->id] = 'required|numeric';
+                    } else {
+                        $rules['questionAnswers.' . $question->id] = 'required|string|max:1000';
+                    }
+                } else {
+                    if ($question->field_type === 'email') {
+                        $rules['questionAnswers.' . $question->id] = 'nullable|email|max:255';
+                    } elseif ($question->field_type === 'number') {
+                        $rules['questionAnswers.' . $question->id] = 'nullable|numeric';
+                    } else {
+                        $rules['questionAnswers.' . $question->id] = 'nullable|string|max:1000';
+                    }
+                }
+            }
+        }
+
+        $this->validate($rules);
 
         try {
             // Final validation: prevent booking in the past
@@ -197,6 +238,7 @@ class Show extends Component
                 'client_email' => $this->clientEmail,
                 'date_time' => $dateTime,
                 'notes' => $this->notes,
+                'question_answers' => $this->questionAnswers,
             ]);
 
             $this->currentStep = 3;

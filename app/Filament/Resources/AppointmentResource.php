@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AppointmentResource\Pages;
+use App\Filament\Resources\AppointmentResource\RelationManagers;
 use App\Models\Appointment;
 use App\Models\Service;
 use Filament\Facades\Filament;
@@ -80,6 +81,20 @@ class AppointmentResource extends Resource
                             ->suffix(__('common.minutes'))
                             ->disabled(),
 
+                        Forms\Components\Placeholder::make('price')
+                            ->label(__('filament.price'))
+                            ->content(function ($get, $record) {
+                                $serviceId = $get('service_id') ?? ($record?->service_id ?? null);
+                                if ($serviceId) {
+                                    $service = Service::find($serviceId);
+                                    if ($service) {
+                                        return 'EGP ' . number_format($service->price, 2);
+                                    }
+                                }
+                                return 'N/A';
+                            })
+                            ->reactive(),
+
                         Forms\Components\Select::make('status')
                             ->label(__('filament.status'))
                             ->required()
@@ -90,59 +105,6 @@ class AppointmentResource extends Resource
                             ])
                             ->default('booked')
                             ->native(false),
-                    ])
-                    ->columns(2),
-
-                Forms\Components\Section::make(__('filament.client_information'))
-                    ->schema([
-                        Forms\Components\Select::make('contact_id')
-                            ->label(__('filament.contact'))
-                            ->relationship('contact', 'first_name', modifyQueryUsing: fn (Builder $query) => $query->where('tenant_id', auth()->user()->tenant_id))
-                            ->searchable()
-                            ->preload()
-                            ->getSearchResultsUsing(fn (string $search) => \App\Models\Contact::where('tenant_id', auth()->user()->tenant_id)
-                                ->where('user_id', auth()->id())
-                                ->where(function ($query) use ($search) {
-                                    $query->where('first_name', 'like', "%{$search}%")
-                                        ->orWhere('last_name', 'like', "%{$search}%")
-                                        ->orWhere('mobile', 'like', "%{$search}%");
-                                })
-                                ->limit(50)
-                                ->get()
-                                ->mapWithKeys(fn ($contact) => [$contact->id => $contact->first_name . ' ' . $contact->last_name . ' (' . $contact->mobile . ')']))
-                            ->getOptionLabelUsing(fn ($value): ?string => \App\Models\Contact::find($value)?->first_name . ' ' . \App\Models\Contact::find($value)?->last_name)
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                if ($state) {
-                                    $contact = \App\Models\Contact::find($state);
-                                    if ($contact) {
-                                        $set('client_name', $contact->first_name . ' ' . $contact->last_name);
-                                        $set('client_phone', $contact->mobile);
-                                        $set('client_email', $contact->email);
-                                    }
-                                }
-                            }),
-
-                        Forms\Components\TextInput::make('client_name')
-                            ->label(__('filament.client_name'))
-                            ->required()
-                            ->maxLength(255),
-
-                        Forms\Components\TextInput::make('client_phone')
-                            ->label(__('filament.client_phone'))
-                            ->required()
-                            ->tel()
-                            ->maxLength(255),
-
-                        Forms\Components\TextInput::make('client_email')
-                            ->label(__('filament.client_email'))
-                            ->email()
-                            ->maxLength(255),
-
-                        Forms\Components\Textarea::make('notes')
-                            ->label(__('filament.notes'))
-                            ->rows(3)
-                            ->columnSpanFull(),
                     ])
                     ->columns(2),
             ]);
@@ -330,7 +292,8 @@ class AppointmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ClientInformationRelationManager::class,
+            RelationManagers\QuestionAnswersRelationManager::class,
         ];
     }
 

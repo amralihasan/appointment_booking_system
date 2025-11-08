@@ -18,5 +18,9 @@ Route::get('/register', Register::class)
     ->middleware('guest');
 
 // Public booking route: domain-name.coach-name/service-name
+// Exclude admin routes to avoid conflicts
 Route::get('/{tenantSlug}/{serviceSlug}', Show::class)
-    ->name('booking.show');
+    ->where('tenantSlug', '[a-z0-9\-]+')
+    ->where('serviceSlug', '[a-z0-9\-]+')
+    ->name('booking.show')
+    ->middleware('web');

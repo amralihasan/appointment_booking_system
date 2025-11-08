@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Tenant extends Model
 {
@@ -52,6 +53,18 @@ class Tenant extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function serviceQuestions(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ServiceQuestion::class,
+            Service::class,
+            'tenant_id', // Foreign key on services table
+            'service_id', // Foreign key on service_questions table
+            'id', // Local key on tenants table
+            'id' // Local key on services table
+        );
     }
 
     /**

@@ -45,5 +45,7 @@ return [
     'status' => 'الحالة',
     'booked' => 'محجوز',
     'booking_success_message' => 'تم حجز موعدك بنجاح.',
+    'additional_questions' => 'أسئلة إضافية',
+    'select_option' => 'اختر خياراً',
 ];
 

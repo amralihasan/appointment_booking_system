@@ -271,6 +271,85 @@
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             ></textarea>
                         </div>
+
+                        @if($service && $service->questions && $service->questions->count() > 0)
+                            <div class="pt-4 border-t border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ __('common.additional_questions') }}</h3>
+                                <div class="space-y-4">
+                                    @foreach($service->questions as $question)
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                {{ $question->question_text }}
+                                                @if($question->is_required)
+                                                    <span class="text-red-500">*</span>
+                                                @else
+                                                    <span class="text-gray-400 text-xs">({{ __('common.optional') }})</span>
+                                                @endif
+                                            </label>
+
+                                            @if($question->field_type === 'text')
+                                                <input
+                                                    type="text"
+                                                    wire:model.blur="questionAnswers.{{ $question->id }}"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    @if($question->is_required) required @endif
+                                                >
+                                            @elseif($question->field_type === 'email')
+                                                <input
+                                                    type="email"
+                                                    wire:model.blur="questionAnswers.{{ $question->id }}"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    @if($question->is_required) required @endif
+                                                >
+                                            @elseif($question->field_type === 'number')
+                                                <input
+                                                    type="number"
+                                                    wire:model.blur="questionAnswers.{{ $question->id }}"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    @if($question->is_required) required @endif
+                                                >
+                                            @elseif($question->field_type === 'textarea')
+                                                <textarea
+                                                    wire:model.blur="questionAnswers.{{ $question->id }}"
+                                                    rows="3"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    @if($question->is_required) required @endif
+                                                ></textarea>
+                                            @elseif($question->field_type === 'select_one')
+                                                <select
+                                                    wire:model.blur="questionAnswers.{{ $question->id }}"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    @if($question->is_required) required @endif
+                                                >
+                                                    <option value="">{{ __('common.select_option') }}</option>
+                                                    @foreach($question->options as $option)
+                                                        <option value="{{ $option }}">{{ $option }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @elseif($question->field_type === 'select_multiple')
+                                                <div class="space-y-2">
+                                                    @foreach($question->options as $option)
+                                                        <label class="flex items-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                wire:model="questionAnswers.{{ $question->id }}"
+                                                                value="{{ $option }}"
+                                                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                            >
+                                                            <span class="ml-2 text-sm text-gray-700">{{ $option }}</span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+
+                                            @error('questionAnswers.' . $question->id)
+                                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     @error('booking') 

@@ -49,6 +49,11 @@ class Service extends Model
         return $this->hasMany(ServiceTranslation::class);
     }
 
+    public function questions(): HasMany
+    {
+        return $this->hasMany(ServiceQuestion::class)->ordered();
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

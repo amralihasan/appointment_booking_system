@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Appointment extends Model
 {
@@ -96,5 +97,10 @@ class Appointment extends Model
     public function scopeBooked($query)
     {
         return $query->where('status', 'booked');
+    }
+
+    public function questionAnswers(): HasMany
+    {
+        return $this->hasMany(ServiceQuestionAnswer::class);
     }
 }

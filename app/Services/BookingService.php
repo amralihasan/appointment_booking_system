@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Contact;
 use App\Models\Service;
+use App\Models\ServiceQuestionAnswer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -65,6 +66,25 @@ class BookingService
                 'status' => 'booked',
                 'notes' => $data['notes'] ?? null,
             ]);
+
+            // Store question answers if provided
+            if (isset($data['question_answers']) && is_array($data['question_answers'])) {
+                foreach ($data['question_answers'] as $questionId => $answerValue) {
+                    // Skip empty answers (for optional questions)
+                    if (empty($answerValue) || (is_array($answerValue) && empty($answerValue))) {
+                        continue;
+                    }
+
+                    // For select_multiple, store as JSON
+                    $answerToStore = is_array($answerValue) ? json_encode($answerValue) : $answerValue;
+
+                    ServiceQuestionAnswer::create([
+                        'appointment_id' => $appointment->id,
+                        'service_question_id' => $questionId,
+                        'answer_value' => $answerToStore,
+                    ]);
+                }
+            }
 
             return $appointment;
         });

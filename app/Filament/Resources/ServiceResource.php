@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceResource\Pages;
+use App\Filament\Resources\ServiceResource\RelationManagers;
 use App\Models\Service;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -160,10 +161,22 @@ class ServiceResource extends Resource
                     ->state(__('filament.preview'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('primary')
-                    ->url(fn ($record) => route('booking.show', [
-                        'tenantSlug' => $record->tenant->slug,
-                        'serviceSlug' => $record->slug,
-                    ]))
+                    ->url(function ($record) {
+                        // Ensure tenant is loaded
+                        if (!$record->relationLoaded('tenant')) {
+                            $record->load('tenant');
+                        }
+                        
+                        if (!$record->tenant || !$record->tenant->slug || !$record->slug) {
+                            return null;
+                        }
+                        
+                        try {
+                            return url('/' . $record->tenant->slug . '/' . $record->slug);
+                        } catch (\Exception $e) {
+                            return null;
+                        }
+                    })
                     ->openUrlInNewTab()
                     ->tooltip(__('filament.open_booking_preview'))
                     ->sortable(false),
@@ -202,7 +215,7 @@ class ServiceResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\QuestionsRelationManager::class,
         ];
     }
 

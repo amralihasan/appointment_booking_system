@@ -45,5 +45,7 @@ return [
     'status' => 'Status',
     'booked' => 'Booked',
     'booking_success_message' => 'Your appointment has been successfully booked.',
+    'additional_questions' => 'Additional Questions',
+    'select_option' => 'Select an option',
 ];
 
