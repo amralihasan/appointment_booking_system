@@ -138,6 +138,36 @@ class AppointmentResource extends Resource
                     ->searchable(['employee.first_name', 'employee.last_name'])
                     ->sortable()
                     ->default('—')
+                    ->action(
+                        Tables\Actions\Action::make('view_employee')
+                            ->label(__('filament.view_employee'))
+                            ->icon('heroicon-o-user')
+                            ->modalHeading(function ($record) {
+                                return $record->employee ? $record->employee->full_name : __('filament.employee');
+                            })
+                            ->modalContent(function ($record) {
+                                if (!$record->employee) {
+                                    return view('filament.resources.appointment-resource.employee-not-found');
+                                }
+                                
+                                $employee = $record->employee;
+                                $appointments = \App\Models\Appointment::where('employee_id', $employee->id)
+                                    ->where('tenant_id', $record->tenant_id)
+                                    ->with(['service', 'contact'])
+                                    ->orderBy('date_time', 'desc')
+                                    ->get();
+                                
+                                return view('filament.resources.appointment-resource.employee-details', [
+                                    'employee' => $employee,
+                                    'appointments' => $appointments,
+                                ]);
+                            })
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel(__('filament.close'))
+                            ->disabled(fn ($record) => !$record->employee)
+                    )
+                    ->color('primary')
+                    ->icon(fn ($record) => $record->employee ? 'heroicon-o-user' : null)
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('date_time')
@@ -329,7 +359,7 @@ class AppointmentResource extends Resource
             $query->where('user_id', $user->id);
         }
         
-        return $query->with(['employee', 'service', 'contact']);
+        return $query->with(['employee', 'service', 'contact', 'service.user']);
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array

@@ -110,6 +110,14 @@ return [
     'error_loading_preview' => 'Error Loading Preview',
     'error_loading_preview_description' => 'Unable to load service information. Please try again later.',
     'close' => 'Close',
+    'view_employee' => 'View Employee',
+    'no_employee_assigned' => 'No Employee Assigned',
+    'no_employee_assigned_description' => 'This appointment does not have an employee assigned.',
+    'no_appointments_found' => 'No appointments found for this employee.',
+    'share_service_link' => 'Share Service Link',
+    'copy_link' => 'Copy Link',
+    'copied' => 'Copied!',
+    'select_employee' => 'Select Employee',
     
     // Status Messages
     'n_slots' => '{count} slot(s)',

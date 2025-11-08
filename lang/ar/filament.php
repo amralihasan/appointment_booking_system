@@ -110,6 +110,14 @@ return [
     'error_loading_preview' => 'خطأ في تحميل المعاينة',
     'error_loading_preview_description' => 'تعذر تحميل معلومات الخدمة. يرجى المحاولة مرة أخرى لاحقاً.',
     'close' => 'إغلاق',
+    'view_employee' => 'عرض الموظف',
+    'no_employee_assigned' => 'لا يوجد موظف معين',
+    'no_employee_assigned_description' => 'هذا الحجز لا يحتوي على موظف معين.',
+    'no_appointments_found' => 'لا توجد مواعيد لهذا الموظف.',
+    'share_service_link' => 'رابط مشاركة الخدمة',
+    'copy_link' => 'نسخ الرابط',
+    'copied' => 'تم النسخ!',
+    'select_employee' => 'اختر الموظف',
     
     // Status Messages
     'n_slots' => '{count} وقت',

@@ -49,7 +49,7 @@ class EmployeeShow extends Component
     public function render()
     {
         return view('livewire.booking.employee-show')
-            ->layout('layouts.booking-layout');
+            ->layout('livewire.layouts.booking-layout');
     }
 }
 

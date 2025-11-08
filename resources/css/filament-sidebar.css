@@ -1,0 +1,64 @@
+/* Custom sidebar background color */
+.fi-sidebar {
+    background-color: rgb(37, 37, 37) !important;
+}
+
+/* Default: All sidebar text and icons are white */
+.fi-sidebar,
+.fi-sidebar * {
+    color: white !important;
+}
+
+/* Default: All sidebar icons (SVGs) are white */
+.fi-sidebar svg,
+.fi-sidebar .fi-icon {
+    color: white !important;
+    fill: white !important;
+    stroke: white !important;
+}
+
+/* Only Active/Selected navigation item - change to orange */
+.fi-sidebar .fi-active,
+.fi-sidebar .fi-active *,
+.fi-sidebar .fi-sidebar-item-active,
+.fi-sidebar .fi-sidebar-item-active *,
+.fi-sidebar .fi-sidebar-nav-item-active,
+.fi-sidebar .fi-sidebar-nav-item-active *,
+.fi-sidebar .fi-sidebar-nav-link-active,
+.fi-sidebar .fi-sidebar-nav-link-active *,
+.fi-sidebar [aria-current="page"],
+.fi-sidebar [aria-current="page"] * {
+    color: rgb(251, 146, 60) !important; /* Orange-400 */
+}
+
+/* Only Active/Selected navigation item icons - change to orange */
+.fi-sidebar .fi-active svg,
+.fi-sidebar .fi-sidebar-item-active svg,
+.fi-sidebar .fi-sidebar-nav-item-active svg,
+.fi-sidebar .fi-sidebar-nav-link-active svg,
+.fi-sidebar [aria-current="page"] svg,
+.fi-sidebar .fi-active .fi-icon,
+.fi-sidebar .fi-sidebar-item-active .fi-icon,
+.fi-sidebar .fi-sidebar-nav-item-active .fi-icon,
+.fi-sidebar .fi-sidebar-nav-link-active .fi-icon,
+.fi-sidebar [aria-current="page"] .fi-icon {
+    color: rgb(251, 146, 60) !important; /* Orange-400 */
+    fill: rgb(251, 146, 60) !important; /* Orange-400 */
+    stroke: rgb(251, 146, 60) !important; /* Orange-400 */
+}
+
+/* Ensure non-active items stay white */
+.fi-sidebar .fi-sidebar-item:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) *,
+.fi-sidebar .fi-sidebar-nav-item:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) *,
+.fi-sidebar .fi-sidebar-nav-link:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) * {
+    color: white !important;
+}
+
+/* Ensure non-active icons stay white */
+.fi-sidebar .fi-sidebar-item:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) svg,
+.fi-sidebar .fi-sidebar-nav-item:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) svg,
+.fi-sidebar .fi-sidebar-nav-link:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) svg {
+    color: white !important;
+    fill: white !important;
+    stroke: white !important;
+}

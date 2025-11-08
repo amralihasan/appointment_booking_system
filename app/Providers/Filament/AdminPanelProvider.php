@@ -14,6 +14,8 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Assets\Css;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -65,5 +67,14 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+    
+    public function register(): void
+    {
+        parent::register();
+        
+        FilamentAsset::register([
+            Css::make('custom-sidebar', __DIR__ . '/../../../resources/css/filament-sidebar.css'),
+        ]);
     }
 }
