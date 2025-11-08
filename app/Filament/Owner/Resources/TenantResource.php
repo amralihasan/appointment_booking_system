@@ -4,6 +4,7 @@ namespace App\Filament\Owner\Resources;
 
 use App\Filament\Owner\Resources\TenantResource\Pages;
 use App\Filament\Owner\Resources\TenantResource\RelationManagers;
+use App\Models\Category;
 use App\Models\Tenant;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -25,6 +26,13 @@ class TenantResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('filament.tenant_information'))
                     ->schema([
+                        Forms\Components\Select::make('category_id')
+                            ->label('Category')
+                            ->relationship('category', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->helperText('Select the business category for this tenant'),
                         Forms\Components\TextInput::make('name')
                             ->label(__('filament.name'))
                             ->required()
@@ -60,6 +68,13 @@ class TenantResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('category.name')
+                    ->label('Category')
+                    ->badge()
+                    ->color(fn ($record) => $record->category?->color ?? 'gray')
+                    ->icon(fn ($record) => $record->category?->icon ?? 'heroicon-o-tag')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('filament.name'))
                     ->searchable()
@@ -103,6 +118,11 @@ class TenantResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->label('Category')
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload(),
                 Tables\Filters\SelectFilter::make('status')
                     ->label(__('filament.status'))
                     ->options([

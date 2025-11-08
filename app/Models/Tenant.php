@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
@@ -13,6 +14,7 @@ class Tenant extends Model
         'subdomain',
         'status',
         'trial_ends_at',
+        'category_id',
     ];
 
     protected function casts(): array
@@ -45,5 +47,18 @@ class Tenant extends Model
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get category-specific field configuration
+     */
+    public function getCategoryFieldConfig(): ?array
+    {
+        return $this->category?->field_config;
     }
 }

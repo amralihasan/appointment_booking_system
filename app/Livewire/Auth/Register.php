@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\Category;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,7 @@ class Register extends Component
     public string $password_confirmation = '';
     public string $tenant_name = '';
     public string $tenant_slug = '';
+    public ?int $category_id = null;
 
     protected $rules = [
         'first_name' => 'required|string|max:255',
@@ -28,6 +30,7 @@ class Register extends Component
         'password' => 'required|string|min:8|confirmed',
         'tenant_name' => 'required|string|max:255',
         'tenant_slug' => 'required|string|max:255|unique:tenants,slug',
+        'category_id' => 'required|exists:categories,id',
     ];
 
     public function updatedTenantName($value)
@@ -44,6 +47,7 @@ class Register extends Component
         $tenant = Tenant::create([
             'name' => $this->tenant_name,
             'slug' => $this->tenant_slug,
+            'category_id' => $this->category_id,
         ]);
 
         // Create user
@@ -68,7 +72,11 @@ class Register extends Component
 
     public function render()
     {
-        return view('livewire.auth.register')
+        $categories = Category::active()->ordered()->get();
+        
+        return view('livewire.auth.register', [
+            'categories' => $categories,
+        ])
             ->layout('layouts.landing-page');
     }
 }
