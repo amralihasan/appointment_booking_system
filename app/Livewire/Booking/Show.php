@@ -13,8 +13,10 @@ class Show extends Component
 {
     public ?Tenant $tenant = null;
     public ?Service $service = null;
+    public ?\App\Models\Employee $employee = null;
     public string $tenantSlug;
     public string $serviceSlug;
+    public ?string $employeeSlug = null;
 
     // Step 1: Date/Time Selection
     public int $currentStep = 1;
@@ -54,13 +56,18 @@ class Show extends Component
      */
     protected function getCoachTimezone(): string
     {
+        // Use employee's timezone if provided, otherwise use service user's timezone
+        if ($this->employee) {
+            return $this->employee->timezone ?? 'Africa/Cairo';
+        }
         return $this->service?->user?->timezone ?? 'Africa/Cairo';
     }
 
-    public function mount(string $tenantSlug, string $serviceSlug)
+    public function mount(string $tenantSlug, string $serviceSlug, ?string $employeeSlug = null)
     {
         $this->tenantSlug = $tenantSlug;
         $this->serviceSlug = $serviceSlug;
+        $this->employeeSlug = $employeeSlug;
 
         // Load tenant and service
         // Allow both 'active' and 'trial' status tenants
@@ -73,6 +80,19 @@ class Show extends Component
             ->where('is_active', true)
             ->with(['questions', 'user'])
             ->firstOrFail();
+
+        // Load employee if provided
+        if ($employeeSlug) {
+            $this->employee = \App\Models\Employee::where('tenant_id', $this->tenant->id)
+                ->where('slug', $employeeSlug)
+                ->where('is_active', true)
+                ->firstOrFail();
+            
+            // Verify employee has access to this service
+            if (!$this->service->employees()->where('employees.id', $this->employee->id)->exists()) {
+                abort(404, 'Employee does not have access to this service.');
+            }
+        }
         
         // Initialize question answers
         if ($this->service->questions) {
@@ -240,7 +260,7 @@ class Show extends Component
             }
             
             // Parse date/time in the coach's timezone
-            $coachTimezone = $this->service->user->timezone ?? 'Africa/Cairo';
+            $coachTimezone = $this->getCoachTimezone();
             $dateTime = Carbon::parse($this->selectedDate . ' ' . $this->selectedTime, $coachTimezone);
             $now = Carbon::now($coachTimezone);
             
@@ -255,6 +275,7 @@ class Show extends Component
                 'tenant_id' => $this->tenant->id,
                 'user_id' => $this->service->user_id,
                 'service_id' => $this->service->id,
+                'employee_id' => $this->employee?->id,
                 'client_name' => trim($this->clientFirstName . ' ' . $this->clientLastName),
                 'client_phone' => $this->clientPhone,
                 'client_email' => $this->clientEmail,
@@ -300,11 +321,33 @@ class Show extends Component
             // Check if there's availability for this day (only for current/future dates in current month within booking scope)
             $hasAvailability = false;
             if ($isCurrentMonth && !$isPast && !$isBeyondScope) {
-                $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
-                    ->where('user_id', $this->service->user_id)
-                    ->where('day_of_week', $dayOfWeek)
-                    ->where('is_active', true)
-                    ->exists();
+                if ($this->employee) {
+                    // First check for employee-specific schedules
+                    $employeeSchedules = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                        ->where('day_of_week', $dayOfWeek)
+                        ->where('is_active', true)
+                        ->where('employee_id', $this->employee->id)
+                        ->exists();
+                    
+                    // If no employee schedules, fall back to user schedules (employee inherits from service owner)
+                    if (!$employeeSchedules) {
+                        $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                            ->where('day_of_week', $dayOfWeek)
+                            ->where('is_active', true)
+                            ->where('user_id', $this->service->user_id)
+                            ->whereNull('employee_id')
+                            ->exists();
+                    } else {
+                        $hasAvailability = true;
+                    }
+                } else {
+                    $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                        ->where('day_of_week', $dayOfWeek)
+                        ->where('is_active', true)
+                        ->where('user_id', $this->service->user_id)
+                        ->whereNull('employee_id')
+                        ->exists();
+                }
             }
             
             // Check if this date is selected - compare dates in the same format
@@ -345,11 +388,27 @@ class Show extends Component
             $dayOfWeek = $date->dayOfWeek;
 
             // Check if there's availability for this day
-            $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
-                ->where('user_id', $this->service->user_id)
+            $availabilityQuery = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
                 ->where('day_of_week', $dayOfWeek)
-                ->where('is_active', true)
-                ->exists();
+                ->where('is_active', true);
+            
+            if ($this->employee) {
+                // First check for employee-specific schedules
+                $employeeSchedules = $availabilityQuery->where('employee_id', $this->employee->id)->exists();
+                
+                // If no employee schedules, fall back to user schedules (employee inherits from service owner)
+                if (!$employeeSchedules) {
+                    $hasAvailability = $availabilityQuery->where('user_id', $this->service->user_id)
+                        ->whereNull('employee_id')
+                        ->exists();
+                } else {
+                    $hasAvailability = true;
+                }
+            } else {
+                $hasAvailability = $availabilityQuery->where('user_id', $this->service->user_id)
+                    ->whereNull('employee_id')
+                    ->exists();
+            }
 
             if ($hasAvailability) {
                 $dates[] = [
@@ -365,10 +424,12 @@ class Show extends Component
 
     protected function loadTimeSlots(string $date)
     {
+        $employeeId = $this->employee?->id;
         $allSlots = $this->availabilityService->getAvailableTimeSlots(
             $this->tenant->id,
             $this->service->id,
-            $date
+            $date,
+            $employeeId
         );
         
         // Filter out past time slots if the selected date is today
@@ -422,22 +483,48 @@ class Show extends Component
         
         // First, check today specifically - if it has slots, always select today
         $todayDayOfWeek = $today->dayOfWeek;
-        $todayHasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
-            ->where('user_id', $this->service->user_id)
-            ->where('day_of_week', $todayDayOfWeek)
-            ->where('is_active', true)
-            ->exists();
+        
+        if ($this->employee) {
+            // First check for employee-specific schedules
+            $employeeSchedules = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                ->where('day_of_week', $todayDayOfWeek)
+                ->where('is_active', true)
+                ->where('employee_id', $this->employee->id)
+                ->exists();
+            
+            // If no employee schedules, fall back to user schedules
+            if (!$employeeSchedules) {
+                $todayHasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                    ->where('day_of_week', $todayDayOfWeek)
+                    ->where('is_active', true)
+                    ->where('user_id', $this->service->user_id)
+                    ->whereNull('employee_id')
+                    ->exists();
+            } else {
+                $todayHasAvailability = true;
+            }
+        } else {
+            $todayHasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                ->where('day_of_week', $todayDayOfWeek)
+                ->where('is_active', true)
+                ->where('user_id', $this->service->user_id)
+                ->whereNull('employee_id')
+                ->exists();
+        }
         
         if ($todayHasAvailability) {
+            $employeeId = $this->employee?->id;
             $todaySlots = $this->availabilityService->getAvailableTimeSlots(
                 $this->tenant->id,
                 $this->service->id,
-                $todayDateString
+                $todayDateString,
+                $employeeId
             );
             
             // Filter out past slots
-            $todaySlots = array_filter($todaySlots, function($slot) use ($todayDateString, $now) {
-                $slotDateTime = Carbon::parse($todayDateString . ' ' . $slot['start']);
+            $coachTimezone = $this->getCoachTimezone();
+            $todaySlots = array_filter($todaySlots, function($slot) use ($todayDateString, $now, $coachTimezone) {
+                $slotDateTime = Carbon::parse($todayDateString . ' ' . $slot['start'], $coachTimezone);
                 return $slotDateTime->gt($now);
             });
             
@@ -471,18 +558,42 @@ class Show extends Component
             $dayOfWeek = $currentDate->dayOfWeek;
             
             // Check if there's availability for this day of week
-            $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
-                ->where('user_id', $this->service->user_id)
-                ->where('day_of_week', $dayOfWeek)
-                ->where('is_active', true)
-                ->exists();
+            if ($this->employee) {
+                // First check for employee-specific schedules
+                $employeeSchedules = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->where('employee_id', $this->employee->id)
+                    ->exists();
+                
+                // If no employee schedules, fall back to user schedules
+                if (!$employeeSchedules) {
+                    $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                        ->where('day_of_week', $dayOfWeek)
+                        ->where('is_active', true)
+                        ->where('user_id', $this->service->user_id)
+                        ->whereNull('employee_id')
+                        ->exists();
+                } else {
+                    $hasAvailability = true;
+                }
+            } else {
+                $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->where('user_id', $this->service->user_id)
+                    ->whereNull('employee_id')
+                    ->exists();
+            }
             
             if ($hasAvailability) {
                 // Check if this date has available time slots
+                $employeeId = $this->employee?->id;
                 $slots = $this->availabilityService->getAvailableTimeSlots(
                     $this->tenant->id,
                     $this->service->id,
-                    $currentDate->format('Y-m-d')
+                    $currentDate->format('Y-m-d'),
+                    $employeeId
                 );
                 
                 // If we found slots, select this date
@@ -510,10 +621,12 @@ class Show extends Component
     
     protected function loadTimeSlotsWithoutAutoMove(string $date)
     {
+        $employeeId = $this->employee?->id;
         $allSlots = $this->availabilityService->getAvailableTimeSlots(
             $this->tenant->id,
             $this->service->id,
-            $date
+            $date,
+            $employeeId
         );
         
         // Filter out past time slots if the selected date is today
@@ -551,18 +664,42 @@ class Show extends Component
             $dayOfWeek = $currentDate->dayOfWeek;
             
             // Check if there's availability for this day of week
-            $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
-                ->where('user_id', $this->service->user_id)
-                ->where('day_of_week', $dayOfWeek)
-                ->where('is_active', true)
-                ->exists();
+            if ($this->employee) {
+                // First check for employee-specific schedules
+                $employeeSchedules = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->where('employee_id', $this->employee->id)
+                    ->exists();
+                
+                // If no employee schedules, fall back to user schedules
+                if (!$employeeSchedules) {
+                    $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                        ->where('day_of_week', $dayOfWeek)
+                        ->where('is_active', true)
+                        ->where('user_id', $this->service->user_id)
+                        ->whereNull('employee_id')
+                        ->exists();
+                } else {
+                    $hasAvailability = true;
+                }
+            } else {
+                $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->where('user_id', $this->service->user_id)
+                    ->whereNull('employee_id')
+                    ->exists();
+            }
             
             if ($hasAvailability) {
                 // Check if this date has available time slots
+                $employeeId = $this->employee?->id;
                 $slots = $this->availabilityService->getAvailableTimeSlots(
                     $this->tenant->id,
                     $this->service->id,
-                    $currentDate->format('Y-m-d')
+                    $currentDate->format('Y-m-d'),
+                    $employeeId
                 );
                 
                 // Filter out past slots if today
@@ -594,10 +731,12 @@ class Show extends Component
 
         $coachTimezone = $this->getCoachTimezone();
         $dateTime = Carbon::parse($this->selectedDate . ' ' . $this->selectedTime, $coachTimezone);
+        $employeeId = $this->employee?->id;
         return $this->availabilityService->getRemainingSpots(
             $this->tenant->id,
             $this->service->id,
-            $dateTime
+            $dateTime,
+            $employeeId
         );
     }
 

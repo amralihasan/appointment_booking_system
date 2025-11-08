@@ -129,6 +129,27 @@ class ServiceResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->default(true)
                             ->label(__('filament.active')),
+
+                        Forms\Components\Select::make('employees')
+                            ->label(__('filament.employees'))
+                            ->relationship('employees', 'full_name', modifyQueryUsing: function (Builder $query) {
+                                $tenant = Filament::getTenant();
+                                if ($tenant) {
+                                    $query->where('tenant_id', $tenant->id)
+                                        ->where('is_active', true);
+                                }
+                                return $query;
+                            })
+                            ->multiple()
+                            ->required()
+                            ->minItems(1)
+                            ->searchable()
+                            ->preload()
+                            ->getOptionLabelFromRecordUsing(function ($record) {
+                                return $record->full_name;
+                            })
+                            ->helperText(__('filament.select_at_least_one_employee'))
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
             ]);
@@ -185,23 +206,41 @@ class ServiceResource extends Resource
                     ->state(__('filament.preview'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('primary')
-                    ->url(function ($record) {
-                        // Ensure tenant is loaded
-                        if (!$record->relationLoaded('tenant')) {
-                            $record->load('tenant');
-                        }
-                        
-                        if (!$record->tenant || !$record->tenant->slug || !$record->slug) {
-                            return null;
-                        }
-                        
-                        try {
-                            return url('/' . $record->tenant->slug . '/' . $record->slug);
-                        } catch (\Exception $e) {
-                            return null;
-                        }
-                    })
-                    ->openUrlInNewTab()
+                    ->action(
+                        Tables\Actions\Action::make('preview')
+                            ->label(__('filament.preview'))
+                            ->icon('heroicon-o-arrow-top-right-on-square')
+                            ->modalHeading(function ($record) {
+                                return __('filament.select_employee_to_book') . ' - ' . $record->name;
+                            })
+                            ->modalContent(function ($record) {
+                                // Ensure tenant and employees are loaded
+                                if (!$record->relationLoaded('tenant')) {
+                                    $record->load('tenant');
+                                }
+                                if (!$record->relationLoaded('employees')) {
+                                    $record->load('employees');
+                                }
+                                
+                                if (!$record->tenant || !$record->tenant->slug || !$record->slug) {
+                                    return view('filament.resources.service-resource.preview-error');
+                                }
+                                
+                                $employees = $record->employees()->where('is_active', true)->get();
+                                
+                                if ($employees->isEmpty()) {
+                                    return view('filament.resources.service-resource.preview-no-employees');
+                                }
+                                
+                                return view('filament.resources.service-resource.preview-employees', [
+                                    'employees' => $employees,
+                                    'service' => $record,
+                                    'tenant' => $record->tenant,
+                                ]);
+                            })
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel(__('filament.close'))
+                    )
                     ->tooltip(__('filament.open_booking_preview'))
                     ->sortable(false),
 
@@ -240,6 +279,7 @@ class ServiceResource extends Resource
     {
         return [
             RelationManagers\QuestionsRelationManager::class,
+            RelationManagers\EmployeesRelationManager::class,
         ];
     }
 
@@ -268,7 +308,7 @@ class ServiceResource extends Resource
             $query->where('user_id', $user->id);
         }
         
-        return $query->with('tenant');
+        return $query->with(['tenant', 'employees']);
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array

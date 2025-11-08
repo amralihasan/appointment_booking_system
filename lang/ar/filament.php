@@ -11,6 +11,8 @@ return [
     'availability' => 'الجدولة',
     'availability_schedule' => 'جدول الجدولة',
     'availability_schedules' => 'جداول الجدولة',
+    'employees' => 'الموظفون',
+    'employee' => 'موظف',
     
     // Common Labels
     'time' => 'الوقت',
@@ -58,6 +60,7 @@ return [
     'appointment_details' => 'تفاصيل الموعد',
     'client_information' => 'معلومات العميل',
     'schedule_information' => 'معلومات الجدول',
+    'employee_information' => 'معلومات الموظف',
     
     // Form Fields
     'name' => 'الاسم',
@@ -70,6 +73,10 @@ return [
     'end_time' => 'وقت الانتهاء',
     'time_slots' => 'الأوقات المتاحة',
     'date_time' => 'التاريخ والوقت',
+    'photo' => 'الصورة',
+    'bio' => 'السيرة الذاتية',
+    'phone' => 'الهاتف',
+    'user' => 'المستخدم',
     
     // Actions
     'show_past_appointments' => 'إظهار المواعيد السابقة',
@@ -92,6 +99,17 @@ return [
     'time_before_helper' => 'وقت الحماية بالدقائق قبل بدء الخدمة',
     'time_after_helper' => 'وقت الحماية بالدقائق بعد انتهاء الخدمة',
     'booking_scope_days_helper' => 'عدد الأيام التي يمكن للعملاء الحجز مسبقاً (مثلاً، 5 أيام من اليوم)',
+    'employee_active_helper_text' => 'الموظفون غير النشطين لن يظهرون في صفحات الحجز',
+    'select_user_or_employee' => 'اختر إما مستخدماً أو موظفاً لهذا الجدول',
+    'select_at_least_one_employee' => 'يرجى اختيار موظف واحد على الأقل لهذه الخدمة',
+    'select_employee_to_book' => 'اختر الموظف للحجز',
+    'select_employee_to_book_description' => 'اختر موظفاً لعرض صفحة الحجز الخاصة به:',
+    'book_now' => 'احجز الآن',
+    'no_employees_assigned' => 'لا يوجد موظفون معينون',
+    'no_employees_assigned_description' => 'هذه الخدمة لا تحتوي على أي موظفين معينين. يرجى تعيين الموظفين في تبويب الموظفين.',
+    'error_loading_preview' => 'خطأ في تحميل المعاينة',
+    'error_loading_preview_description' => 'تعذر تحميل معلومات الخدمة. يرجى المحاولة مرة أخرى لاحقاً.',
+    'close' => 'إغلاق',
     
     // Status Messages
     'n_slots' => '{count} وقت',

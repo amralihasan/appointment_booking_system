@@ -46,6 +46,45 @@ class AvailabilityScheduleResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('filament.schedule_information'))
                     ->schema([
+                        Forms\Components\Select::make('user_id')
+                            ->label(__('filament.user'))
+                            ->relationship('user', 'first_name', modifyQueryUsing: function (Builder $query) {
+                                $tenant = \Filament\Facades\Filament::getTenant();
+                                if ($tenant) {
+                                    $query->where('tenant_id', $tenant->id);
+                                }
+                                $user = auth()->user();
+                                if ($user && !$user->isOwner()) {
+                                    $query->where('id', $user->id);
+                                }
+                            })
+                            ->getOptionLabelFromRecordUsing(function ($record) {
+                                return $record->full_name;
+                            })
+                            ->searchable(['first_name', 'last_name', 'email'])
+                            ->preload()
+                            ->reactive()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('employee_id', null))
+                            ->helperText(__('filament.select_user_or_employee')),
+
+                        Forms\Components\Select::make('employee_id')
+                            ->label(__('filament.employee'))
+                            ->relationship('employee', 'first_name', modifyQueryUsing: function (Builder $query) {
+                                $tenant = \Filament\Facades\Filament::getTenant();
+                                if ($tenant) {
+                                    $query->where('tenant_id', $tenant->id);
+                                }
+                            })
+                            ->getOptionLabelFromRecordUsing(function ($record) {
+                                return $record->full_name;
+                            })
+                            ->searchable(['first_name', 'last_name', 'email'])
+                            ->preload()
+                            ->reactive()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('user_id', null))
+                            ->helperText(__('filament.select_user_or_employee'))
+                            ->visible(fn ($get) => !$get('user_id')),
+
                         Forms\Components\Select::make('day_of_week')
                             ->required()
                             ->options([
@@ -214,11 +253,14 @@ class AvailabilityScheduleResource extends Resource
             ->where('tenant_id', $tenantId);
         
         if ($userId) {
-            $subquery->where('user_id', $userId);
+            $subquery->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                  ->orWhereNull('user_id');
+            });
         }
         
         $subquery->selectRaw('MIN(id) as id')
-            ->groupBy('day_of_week');
+            ->groupBy('day_of_week', 'user_id', 'employee_id');
         
         $ids = $subquery->pluck('id');
         
@@ -229,7 +271,10 @@ class AvailabilityScheduleResource extends Resource
             ->orderBy('start_time');
         
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                  ->orWhereNull('user_id');
+            });
         }
         
         return $query;
@@ -241,7 +286,14 @@ class AvailabilityScheduleResource extends Resource
         // We'll handle them in the CreateRecord page
         unset($data['time_slots'], $data['is_active_global']);
         $data['tenant_id'] = auth()->user()->tenant_id ?? \Filament\Facades\Filament::getTenant()?->id;
-        $data['user_id'] = auth()->id();
+        
+        // If employee_id is set, don't set user_id (or set to null)
+        if (isset($data['employee_id']) && $data['employee_id']) {
+            $data['user_id'] = null;
+        } else {
+            $data['user_id'] = $data['user_id'] ?? auth()->id();
+            $data['employee_id'] = null;
+        }
 
         return $data;
     }

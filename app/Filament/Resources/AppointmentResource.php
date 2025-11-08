@@ -133,6 +133,13 @@ class AppointmentResource extends Resource
                     ->color('primary')
                     ->icon(fn ($record) => $record->contact_id ? 'heroicon-o-user' : null),
 
+                Tables\Columns\TextColumn::make('employee.full_name')
+                    ->label(__('filament.employee'))
+                    ->searchable(['employee.first_name', 'employee.last_name'])
+                    ->sortable()
+                    ->default('—')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('date_time')
                     ->time('g:i A')
                     ->sortable()
@@ -322,7 +329,7 @@ class AppointmentResource extends Resource
             $query->where('user_id', $user->id);
         }
         
-        return $query;
+        return $query->with(['employee', 'service', 'contact']);
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array

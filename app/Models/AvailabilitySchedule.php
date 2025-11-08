@@ -10,6 +10,7 @@ class AvailabilitySchedule extends Model
     protected $fillable = [
         'tenant_id',
         'user_id',
+        'employee_id',
         'day_of_week',
         'start_time',
         'end_time',
@@ -33,6 +34,11 @@ class AvailabilitySchedule extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -46,5 +52,10 @@ class AvailabilitySchedule extends Model
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
+    }
+
+    public function scopeForEmployee($query, $employeeId)
+    {
+        return $query->where('employee_id', $employeeId);
     }
 }

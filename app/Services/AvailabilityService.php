@@ -12,26 +12,59 @@ class AvailabilityService
     /**
      * Get available time slots for a specific date and service
      */
-    public function getAvailableTimeSlots(int $tenantId, int $serviceId, string $date): array
+    public function getAvailableTimeSlots(int $tenantId, int $serviceId, string $date, ?int $employeeId = null): array
     {
         $service = Service::find($serviceId);
         if (!$service || $service->tenant_id !== $tenantId) {
             return [];
         }
 
-        $user = $service->user;
-        $coachTimezone = $user->timezone ?? 'Africa/Cairo';
+        // Determine timezone: use employee's timezone if provided, otherwise use service user's timezone
+        $coachTimezone = 'Africa/Cairo';
+        if ($employeeId) {
+            $employee = \App\Models\Employee::find($employeeId);
+            if ($employee) {
+                $coachTimezone = $employee->timezone ?? 'Africa/Cairo';
+            }
+        } else {
+            $user = $service->user;
+            $coachTimezone = $user->timezone ?? 'Africa/Cairo';
+        }
 
         // Parse date in coach's timezone
         $dateCarbon = Carbon::parse($date, $coachTimezone);
         $dayOfWeek = $dateCarbon->dayOfWeek; // 0-6
 
         // Get availability schedules for this day of week
-        $schedules = AvailabilitySchedule::where('tenant_id', $tenantId)
-            ->where('user_id', $service->user_id)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('is_active', true)
-            ->get();
+        if ($employeeId) {
+            // First check for employee-specific schedules
+            $schedulesQuery = AvailabilitySchedule::where('tenant_id', $tenantId)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_active', true)
+                ->where('employee_id', $employeeId);
+            
+            $schedules = $schedulesQuery->get();
+            
+            // If no employee schedules, fall back to user schedules (employee inherits from service owner)
+            if ($schedules->isEmpty()) {
+                $schedulesQuery = AvailabilitySchedule::where('tenant_id', $tenantId)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->where('user_id', $service->user_id)
+                    ->whereNull('employee_id');
+                
+                $schedules = $schedulesQuery->get();
+            }
+        } else {
+            // Filter by user if no employee
+            $schedulesQuery = AvailabilitySchedule::where('tenant_id', $tenantId)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_active', true)
+                ->where('user_id', $service->user_id)
+                ->whereNull('employee_id');
+            
+            $schedules = $schedulesQuery->get();
+        }
 
         if ($schedules->isEmpty()) {
             return [];
@@ -83,7 +116,7 @@ class AvailabilityService
                 }
 
                 // Check if this slot is available (convert to UTC for database comparison)
-                if ($this->isSlotAvailable($service, $slotStart, $slotEnd, $tenantId)) {
+                if ($this->isSlotAvailable($service, $slotStart, $slotEnd, $tenantId, $employeeId)) {
                     $availableSlots[] = [
                         'start' => $slotStart->format('H:i'),
                         'end' => $slotEnd->format('H:i'),
@@ -106,7 +139,7 @@ class AvailabilityService
     /**
      * Check if a time slot is available
      */
-    protected function isSlotAvailable(Service $service, Carbon $slotStart, Carbon $slotEnd, int $tenantId): bool
+    protected function isSlotAvailable(Service $service, Carbon $slotStart, Carbon $slotEnd, int $tenantId, ?int $employeeId = null): bool
     {
         // Calculate buffer time zones
         $timeBefore = $service->time_before ?? 0;
@@ -124,11 +157,23 @@ class AvailabilityService
         // Get all appointments that might conflict (overlap with our buffer zone)
         // We need to check appointments that start before our check end
         // and calculate their end time in PHP to check for overlap
-        $potentialConflicts = Appointment::where('tenant_id', $tenantId)
+        $potentialConflictsQuery = Appointment::where('tenant_id', $tenantId)
             ->where('service_id', $service->id)
             ->where('status', 'booked')
-            ->where('date_time', '<', $checkEndUtc)
-            ->get();
+            ->where('date_time', '<', $checkEndUtc);
+
+        // Filter by employee if provided
+        if ($employeeId) {
+            $potentialConflictsQuery->where('employee_id', $employeeId);
+        } else {
+            // If no employee, check appointments without employee or with same user
+            $potentialConflictsQuery->where(function ($query) use ($service) {
+                $query->whereNull('employee_id')
+                    ->orWhere('user_id', $service->user_id);
+            });
+        }
+
+        $potentialConflicts = $potentialConflictsQuery->get();
         
         // Filter in PHP to check actual overlaps (accounting for duration)
         $conflictingAppointments = $potentialConflicts->filter(function ($appointment) use ($checkStartUtc, $checkEndUtc) {
@@ -154,11 +199,23 @@ class AvailabilityService
             $slotEndUtc = $slotEnd->copy()->utc();
             
             // Get potential conflicts and filter in PHP
-            $potentialSlotConflicts = Appointment::where('tenant_id', $tenantId)
+            $potentialSlotConflictsQuery = Appointment::where('tenant_id', $tenantId)
                 ->where('service_id', $service->id)
                 ->where('status', 'booked')
-                ->where('date_time', '<', $slotEndUtc)
-                ->get();
+                ->where('date_time', '<', $slotEndUtc);
+
+            // Filter by employee if provided
+            if ($employeeId) {
+                $potentialSlotConflictsQuery->where('employee_id', $employeeId);
+            } else {
+                // If no employee, check appointments without employee or with same user
+                $potentialSlotConflictsQuery->where(function ($query) use ($service) {
+                    $query->whereNull('employee_id')
+                        ->orWhere('user_id', $service->user_id);
+                });
+            }
+
+            $potentialSlotConflicts = $potentialSlotConflictsQuery->get();
             
             $bookedCount = $potentialSlotConflicts->filter(function ($appointment) use ($slotStartUtc, $slotEndUtc) {
                 $appointmentStart = Carbon::parse($appointment->date_time);
@@ -182,7 +239,7 @@ class AvailabilityService
     /**
      * Get remaining spots for a group service at a specific time
      */
-    public function getRemainingSpots(int $tenantId, int $serviceId, Carbon $dateTime): int
+    public function getRemainingSpots(int $tenantId, int $serviceId, Carbon $dateTime, ?int $employeeId = null): int
     {
         $service = Service::find($serviceId);
         if (!$service || $service->type !== 'group' || !$service->max_spots) {
@@ -194,11 +251,23 @@ class AvailabilityService
         $slotEndUtc = $dateTime->copy()->addMinutes($service->duration)->utc();
 
         // Get potential conflicts and filter in PHP
-        $potentialConflicts = Appointment::where('tenant_id', $tenantId)
+        $potentialConflictsQuery = Appointment::where('tenant_id', $tenantId)
             ->where('service_id', $serviceId)
             ->where('status', 'booked')
-            ->where('date_time', '<', $slotEndUtc)
-            ->get();
+            ->where('date_time', '<', $slotEndUtc);
+
+        // Filter by employee if provided
+        if ($employeeId) {
+            $potentialConflictsQuery->where('employee_id', $employeeId);
+        } else {
+            // If no employee, check appointments without employee or with same user
+            $potentialConflictsQuery->where(function ($query) use ($service) {
+                $query->whereNull('employee_id')
+                    ->orWhere('user_id', $service->user_id);
+            });
+        }
+
+        $potentialConflicts = $potentialConflictsQuery->get();
         
         $bookedCount = $potentialConflicts->filter(function ($appointment) use ($slotStartUtc, $slotEndUtc) {
             $appointmentStart = Carbon::parse($appointment->date_time);

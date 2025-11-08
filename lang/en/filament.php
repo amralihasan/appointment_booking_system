@@ -11,6 +11,8 @@ return [
     'availability' => 'Availability',
     'availability_schedule' => 'Availability Schedule',
     'availability_schedules' => 'Availability Schedules',
+    'employees' => 'Employees',
+    'employee' => 'Employee',
     
     // Common Labels
     'time' => 'Time',
@@ -58,6 +60,7 @@ return [
     'appointment_details' => 'Appointment Details',
     'client_information' => 'Client Information',
     'schedule_information' => 'Schedule Information',
+    'employee_information' => 'Employee Information',
     
     // Form Fields
     'name' => 'Name',
@@ -70,6 +73,10 @@ return [
     'end_time' => 'End Time',
     'time_slots' => 'Time Slots',
     'date_time' => 'Date & Time',
+    'photo' => 'Photo',
+    'bio' => 'Bio',
+    'phone' => 'Phone',
+    'user' => 'User',
     
     // Actions
     'show_past_appointments' => 'Show Past Appointments',
@@ -92,6 +99,17 @@ return [
     'time_before_helper' => 'Buffer time in minutes before the service starts',
     'time_after_helper' => 'Buffer time in minutes after the service ends',
     'booking_scope_days_helper' => 'How many days ahead customers can book (e.g., 5 days from today)',
+    'employee_active_helper_text' => 'Inactive employees will not appear in booking pages',
+    'select_user_or_employee' => 'Select either a user or an employee for this schedule',
+    'select_at_least_one_employee' => 'Please select at least one employee for this service',
+    'select_employee_to_book' => 'Select Employee to Book',
+    'select_employee_to_book_description' => 'Choose an employee to view their booking page:',
+    'book_now' => 'Book Now',
+    'no_employees_assigned' => 'No Employees Assigned',
+    'no_employees_assigned_description' => 'This service does not have any employees assigned. Please assign employees in the Employees tab.',
+    'error_loading_preview' => 'Error Loading Preview',
+    'error_loading_preview_description' => 'Unable to load service information. Please try again later.',
+    'close' => 'Close',
     
     // Status Messages
     'n_slots' => '{count} slot(s)',

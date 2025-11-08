@@ -3,6 +3,7 @@
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\Booking\Show;
+use App\Livewire\Booking\EmployeeShow;
 use App\Livewire\LandingPage;
 use Illuminate\Support\Facades\Route;
 
@@ -17,10 +18,18 @@ Route::get('/register', Register::class)
     ->name('register')
     ->middleware('guest');
 
-// Public booking route: domain-name.coach-name/service-name
-// Exclude admin routes to avoid conflicts
-Route::get('/{tenantSlug}/{serviceSlug}', Show::class)
+// Public booking routes
+// Employee link: domain-name/employee-slug
+Route::get('/{tenantSlug}/{employeeSlug}', EmployeeShow::class)
+    ->where('tenantSlug', '[a-z0-9\-]+')
+    ->where('employeeSlug', '[a-z0-9\-]+')
+    ->name('booking.employee.show')
+    ->middleware('web');
+
+// Service booking with optional employee: domain-name/service-slug/employee-slug
+Route::get('/{tenantSlug}/{serviceSlug}/{employeeSlug?}', Show::class)
     ->where('tenantSlug', '[a-z0-9\-]+')
     ->where('serviceSlug', '[a-z0-9\-]+')
+    ->where('employeeSlug', '[a-z0-9\-]+')
     ->name('booking.show')
     ->middleware('web');

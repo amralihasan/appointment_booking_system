@@ -50,6 +50,11 @@ class Tenant extends Model
         return $this->hasMany(Appointment::class);
     }
 
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

@@ -12,6 +12,7 @@ class Appointment extends Model
         'tenant_id',
         'user_id',
         'service_id',
+        'employee_id',
         'contact_id',
         'client_name',
         'client_phone',
@@ -74,6 +75,11 @@ class Appointment extends Model
         return $this->belongsTo(Service::class);
     }
 
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
+    }
+
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
@@ -92,6 +98,11 @@ class Appointment extends Model
     public function scopeForService($query, $serviceId)
     {
         return $query->where('service_id', $serviceId);
+    }
+
+    public function scopeForEmployee($query, $employeeId)
+    {
+        return $query->where('employee_id', $employeeId);
     }
 
     public function scopeBooked($query)

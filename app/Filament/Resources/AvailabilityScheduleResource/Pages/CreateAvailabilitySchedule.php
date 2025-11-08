@@ -19,7 +19,8 @@ class CreateAvailabilitySchedule extends CreateRecord
         $isActiveGlobal = $data['is_active_global'] ?? true;
         $dayOfWeek = $data['day_of_week'];
         $tenantId = auth()->user()->tenant_id;
-        $userId = auth()->id();
+        $userId = $data['user_id'] ?? auth()->id();
+        $employeeId = $data['employee_id'] ?? null;
 
         // Create multiple records - one for each time slot
         $createdRecords = [];
@@ -28,6 +29,7 @@ class CreateAvailabilitySchedule extends CreateRecord
             $createdRecords[] = AvailabilitySchedule::create([
                 'tenant_id' => $tenantId,
                 'user_id' => $userId,
+                'employee_id' => $employeeId,
                 'day_of_week' => $dayOfWeek,
                 'start_time' => $slot['start_time'],
                 'end_time' => $slot['end_time'],

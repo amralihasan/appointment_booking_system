@@ -1,7 +1,21 @@
+@php
+    use Illuminate\Support\Str;
+@endphp
 <div class="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
     <div class="max-w-5xl w-full mx-auto">
         <!-- Header -->
         <div class="text-center mb-6">
+            @if($employee)
+                <div class="flex items-center justify-center space-x-4 mb-4">
+                    <img src="{{ $employee->photo_url }}" alt="{{ $employee->full_name }}" class="w-16 h-16 rounded-full object-cover">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-700">{{ $employee->full_name }}</h2>
+                        @if($employee->bio)
+                            <p class="text-sm text-gray-500">{{ Str::limit($employee->bio, 50) }}</p>
+                        @endif
+                    </div>
+                </div>
+            @endif
             <h1 class="text-2xl font-bold text-gray-900 mb-1">
                 @if($service)
                     {{ $service->translated_name }}
