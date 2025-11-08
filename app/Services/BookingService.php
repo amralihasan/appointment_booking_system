@@ -98,6 +98,21 @@ class BookingService
                 }
             }
 
+            // Send WhatsApp notification if WhatsApp number exists
+            // Reload appointment with relationships for WhatsApp service
+            $appointment->load(['service', 'tenant', 'user', 'employee', 'contact']);
+            
+            try {
+                $whatsappService = app(\App\Services\WhatsAppNotificationService::class);
+                $whatsappService->sendBookingConfirmation($appointment);
+            } catch (\Exception $e) {
+                // Log error but don't fail the booking
+                \Illuminate\Support\Facades\Log::error('Failed to send WhatsApp notification', [
+                    'appointment_id' => $appointment->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return $appointment;
         });
     }
