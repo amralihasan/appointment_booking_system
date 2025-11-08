@@ -84,6 +84,30 @@ class ServiceResource extends Resource
                             ->suffix(__('common.minutes'))
                             ->default(60),
 
+                        Forms\Components\TextInput::make('time_before')
+                            ->label(__('filament.time_before'))
+                            ->numeric()
+                            ->minValue(0)
+                            ->suffix(__('common.minutes'))
+                            ->default(0)
+                            ->helperText(__('filament.time_before_helper')),
+
+                        Forms\Components\TextInput::make('time_after')
+                            ->label(__('filament.time_after'))
+                            ->numeric()
+                            ->minValue(0)
+                            ->suffix(__('common.minutes'))
+                            ->default(0)
+                            ->helperText(__('filament.time_after_helper')),
+
+                        Forms\Components\TextInput::make('booking_scope_days')
+                            ->label(__('filament.booking_scope_days'))
+                            ->numeric()
+                            ->minValue(1)
+                            ->suffix(__('common.days'))
+                            ->default(30)
+                            ->helperText(__('filament.booking_scope_days_helper')),
+
                         Forms\Components\Select::make('type')
                             ->label(__('filament.type'))
                             ->required()

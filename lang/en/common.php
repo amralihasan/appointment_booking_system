@@ -47,5 +47,9 @@ return [
     'booking_success_message' => 'Your appointment has been successfully booked.',
     'additional_questions' => 'Additional Questions',
     'select_option' => 'Select an option',
+    'buffer_time' => 'Buffer Time',
+    'min_before' => 'min before',
+    'min_after' => 'min after',
+    'days' => 'days',
 ];
 

@@ -15,6 +15,9 @@ class Service extends Model
         'description',
         'price',
         'duration',
+        'time_before',
+        'time_after',
+        'booking_scope_days',
         'type',
         'max_spots',
         'slug',
@@ -26,6 +29,9 @@ class Service extends Model
         return [
             'price' => 'decimal:2',
             'is_active' => 'boolean',
+            'time_before' => 'integer',
+            'time_after' => 'integer',
+            'booking_scope_days' => 'integer',
         ];
     }
 

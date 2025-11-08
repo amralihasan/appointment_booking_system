@@ -86,6 +86,12 @@ return [
     'group_service_helper' => 'مطلوب للخدمات الجماعية',
     'all_slots_active_helper' => 'سيحدد الحالة النشطة الافتراضية لجميع الأوقات',
     'open_booking_preview' => 'فتح معاينة الحجز في علامة تبويب جديدة',
+    'time_before' => 'الوقت قبل',
+    'time_after' => 'الوقت بعد',
+    'booking_scope_days' => 'نطاق الحجز (أيام)',
+    'time_before_helper' => 'وقت الحماية بالدقائق قبل بدء الخدمة',
+    'time_after_helper' => 'وقت الحماية بالدقائق بعد انتهاء الخدمة',
+    'booking_scope_days_helper' => 'عدد الأيام التي يمكن للعملاء الحجز مسبقاً (مثلاً، 5 أيام من اليوم)',
     
     // Status Messages
     'n_slots' => '{count} وقت',

@@ -95,28 +95,70 @@ class BookingService
      */
     protected function validateAvailability(Service $service, Carbon $dateTime, int $tenantId): bool
     {
+        // Calculate buffer time zones
+        $timeBefore = $service->time_before ?? 0;
+        $timeAfter = $service->time_after ?? 0;
+        
+        // Calculate the actual time range to check (including buffer zones)
+        $checkStart = $dateTime->copy()->subMinutes($timeBefore);
+        $checkEnd = $dateTime->copy()->addMinutes($service->duration)->addMinutes($timeAfter);
+        
         // Convert to UTC for database comparison (database stores in UTC)
-        $slotStart = $dateTime->copy()->utc();
-        $slotEnd = $dateTime->copy()->addMinutes($service->duration)->utc();
+        $checkStartUtc = $checkStart->copy()->utc();
+        $checkEndUtc = $checkEnd->copy()->utc();
+        
+        // Also calculate the exact slot times for group service counting
+        $slotStartUtc = $dateTime->copy()->utc();
+        $slotEndUtc = $dateTime->copy()->addMinutes($service->duration)->utc();
 
-        // For one-to-one: check if slot is already booked
+        // Get all appointments that might conflict (overlap with our buffer zone)
+        // We need to check appointments that start before our check end
+        // and calculate their end time in PHP to check for overlap
+        $potentialConflicts = Appointment::where('tenant_id', $tenantId)
+            ->where('service_id', $service->id)
+            ->where('status', 'booked')
+            ->where('date_time', '<', $checkEndUtc)
+            ->get();
+        
+        // Filter in PHP to check actual overlaps (accounting for duration)
+        $conflictingAppointments = $potentialConflicts->filter(function ($appointment) use ($checkStartUtc, $checkEndUtc) {
+            $appointmentStart = Carbon::parse($appointment->date_time);
+            $appointmentEnd = $appointmentStart->copy()->addMinutes($appointment->duration);
+            
+            // Check if appointment overlaps with our buffer zone
+            // An appointment overlaps if:
+            // - Its start time is before our check end AND
+            // - Its end time is after our check start
+            return $appointmentStart->lt($checkEndUtc) && $appointmentEnd->gt($checkStartUtc);
+        });
+
+        // For one-to-one: check if any appointment exists that conflicts
         if ($service->type === 'one') {
-            $exists = Appointment::where('tenant_id', $tenantId)
-                ->where('service_id', $service->id)
-                ->where('status', 'booked')
-                ->whereBetween('date_time', [$slotStart, $slotEnd->copy()->subSecond()])
-                ->exists();
-
-            return !$exists;
+            return $conflictingAppointments->isEmpty();
         }
 
         // For group: check if spots are available
         if ($service->type === 'group' && $service->max_spots) {
-            $bookedCount = Appointment::where('tenant_id', $tenantId)
+            // If there are conflicting appointments (buffer zone conflicts), slot is not available
+            if (!$conflictingAppointments->isEmpty()) {
+                return false;
+            }
+            
+            // Count appointments that overlap with our exact slot (not buffer zone)
+            // Get potential conflicts and filter in PHP
+            $potentialSlotConflicts = Appointment::where('tenant_id', $tenantId)
                 ->where('service_id', $service->id)
                 ->where('status', 'booked')
-                ->whereBetween('date_time', [$slotStart, $slotEnd->copy()->subSecond()])
-                ->count();
+                ->where('date_time', '<', $slotEndUtc)
+                ->get();
+            
+            $bookedCount = $potentialSlotConflicts->filter(function ($appointment) use ($slotStartUtc, $slotEndUtc) {
+                $appointmentStart = Carbon::parse($appointment->date_time);
+                $appointmentEnd = $appointmentStart->copy()->addMinutes($appointment->duration);
+                
+                // Check if appointment overlaps with our exact slot
+                return $appointmentStart->lt($slotEndUtc) && $appointmentEnd->gt($slotStartUtc);
+            })->count();
 
             return $bookedCount < $service->max_spots;
         }

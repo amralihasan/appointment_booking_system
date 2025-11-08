@@ -62,11 +62,11 @@
                                 @foreach($calendarDays as $day)
                                     <button
                                         type="button"
-                                        @if($day['isCurrentMonth'] && !$day['isPast'] && $day['hasAvailability'])
+                                        @if($day['isCurrentMonth'] && !$day['isPast'] && !$day['isBeyondScope'] && $day['hasAvailability'])
                                             wire:click="selectDate('{{ $day['date'] }}')"
                                         @endif
                                         class="aspect-square flex items-center justify-center text-base font-normal rounded-lg transition
-                                            @if(!$day['isCurrentMonth'] || $day['isPast'])
+                                            @if(!$day['isCurrentMonth'] || $day['isPast'] || $day['isBeyondScope'])
                                                 text-gray-300 cursor-not-allowed bg-transparent
                                             @elseif($day['isSelected'])
                                                 bg-blue-600 text-white font-medium
@@ -81,7 +81,7 @@
                                         @if($day['isSelected'])
                                             wire:key="selected-{{ $day['date'] }}"
                                         @endif
-                                        @if(!$day['isCurrentMonth'] || $day['isPast'] || !$day['hasAvailability'])
+                                        @if(!$day['isCurrentMonth'] || $day['isPast'] || $day['isBeyondScope'] || !$day['hasAvailability'])
                                             disabled
                                         @endif
                                     >

@@ -47,5 +47,9 @@ return [
     'booking_success_message' => 'تم حجز موعدك بنجاح.',
     'additional_questions' => 'أسئلة إضافية',
     'select_option' => 'اختر خياراً',
+    'buffer_time' => 'وقت الحماية',
+    'min_before' => 'دقيقة قبل',
+    'min_after' => 'دقيقة بعد',
+    'days' => 'أيام',
 ];
 

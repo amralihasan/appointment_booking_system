@@ -86,6 +86,12 @@ return [
     'group_service_helper' => 'Required for group services',
     'all_slots_active_helper' => 'This will set the default active status for all time slots',
     'open_booking_preview' => 'Open booking preview in new tab',
+    'time_before' => 'Time Before',
+    'time_after' => 'Time After',
+    'booking_scope_days' => 'Booking Scope (Days)',
+    'time_before_helper' => 'Buffer time in minutes before the service starts',
+    'time_after_helper' => 'Buffer time in minutes after the service ends',
+    'booking_scope_days_helper' => 'How many days ahead customers can book (e.g., 5 days from today)',
     
     // Status Messages
     'n_slots' => '{count} slot(s)',

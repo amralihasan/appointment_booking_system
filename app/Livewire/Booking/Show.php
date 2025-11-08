@@ -126,12 +126,19 @@ class Show extends Component
 
     public function selectDate(string $date)
     {
-        // Prevent selecting past dates
+        // Prevent selecting past dates or dates beyond booking scope
         $selectedDate = Carbon::parse($date);
         $today = Carbon::today();
+        $bookingScopeDays = $this->service->booking_scope_days ?? 30;
+        $maxBookingDate = $today->copy()->addDays($bookingScopeDays);
         
         if ($selectedDate->lt($today)) {
             $this->addError('selectedDate', 'Cannot select past dates. Please select a future date.');
+            return;
+        }
+        
+        if ($selectedDate->gt($maxBookingDate)) {
+            $this->addError('selectedDate', 'Cannot select dates beyond the booking scope. Please select a date within ' . $bookingScopeDays . ' days.');
             return;
         }
         
@@ -262,6 +269,8 @@ class Show extends Component
         $calendarDays = [];
         $currentDate = $firstDayOfMonth->copy()->subDays($startDay);
         $today = Carbon::today();
+        $bookingScopeDays = $this->service->booking_scope_days ?? 30;
+        $maxBookingDate = $today->copy()->addDays($bookingScopeDays);
         
         for ($i = 0; $i < $daysToShow; $i++) {
             $dayOfWeek = $currentDate->dayOfWeek;
@@ -270,10 +279,12 @@ class Show extends Component
             $isToday = $currentDate->isToday();
             // Past means before today (not including today)
             $isPast = $currentDate->lt($today);
+            // Beyond booking scope means after max booking date
+            $isBeyondScope = $currentDate->gt($maxBookingDate);
             
-            // Check if there's availability for this day (only for current/future dates in current month)
+            // Check if there's availability for this day (only for current/future dates in current month within booking scope)
             $hasAvailability = false;
-            if ($isCurrentMonth && !$isPast) {
+            if ($isCurrentMonth && !$isPast && !$isBeyondScope) {
                 $hasAvailability = \App\Models\AvailabilitySchedule::where('tenant_id', $this->tenant->id)
                     ->where('user_id', $this->service->user_id)
                     ->where('day_of_week', $dayOfWeek)
@@ -294,6 +305,7 @@ class Show extends Component
                 'isCurrentMonth' => $isCurrentMonth,
                 'isToday' => $isToday,
                 'isPast' => $isPast,
+                'isBeyondScope' => $isBeyondScope,
                 'hasAvailability' => $hasAvailability,
                 'isSelected' => $isSelected,
             ];
@@ -311,7 +323,8 @@ class Show extends Component
     {
         $dates = [];
         $startDate = Carbon::today();
-        $endDate = Carbon::today()->addDays(90); // 3 months ahead
+        $bookingScopeDays = $this->service->booking_scope_days ?? 30;
+        $endDate = Carbon::today()->addDays($bookingScopeDays);
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dayOfWeek = $date->dayOfWeek;
@@ -387,7 +400,8 @@ class Show extends Component
         $today = Carbon::today();
         $todayDateString = $today->format('Y-m-d');
         $now = Carbon::now();
-        $endDate = $today->copy()->addDays(90); // Search up to 90 days ahead
+        $bookingScopeDays = $this->service->booking_scope_days ?? 30;
+        $endDate = $today->copy()->addDays($bookingScopeDays);
         $currentDate = $today->copy(); // Always start from today
         
         // First, check today specifically - if it has slots, always select today
