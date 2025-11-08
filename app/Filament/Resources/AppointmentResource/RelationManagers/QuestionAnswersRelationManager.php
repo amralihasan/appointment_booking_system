@@ -56,6 +56,7 @@ class QuestionAnswersRelationManager extends RelationManager
                         'textarea' => 'success',
                         'select_one' => 'primary',
                         'select_multiple' => 'danger',
+                        'date' => 'warning',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -65,6 +66,7 @@ class QuestionAnswersRelationManager extends RelationManager
                         'textarea' => 'Long Text',
                         'select_one' => 'Select One',
                         'select_multiple' => 'Select Multiple',
+                        'date' => 'Date',
                         default => $state,
                     })
                     ->sortable(),
@@ -77,6 +79,14 @@ class QuestionAnswersRelationManager extends RelationManager
                             $values = json_decode($state, true);
                             if (is_array($values)) {
                                 return implode(', ', $values);
+                            }
+                        }
+                        // Handle date formatting
+                        if ($record->question && $record->question->field_type === 'date' && $state) {
+                            try {
+                                return \Carbon\Carbon::parse($state)->format('Y-m-d');
+                            } catch (\Exception $e) {
+                                return $state;
                             }
                         }
                         return $state;

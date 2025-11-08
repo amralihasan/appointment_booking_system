@@ -67,6 +67,7 @@ class ServiceQuestionResource extends Resource
                                 'textarea' => 'Long Text',
                                 'select_one' => 'Select One Option',
                                 'select_multiple' => 'Select Multiple Options',
+                                'date' => 'Date',
                             ])
                             ->live()
                             ->afterStateUpdated(fn (Forms\Set $set) => $set('options', null)),
@@ -118,27 +119,29 @@ class ServiceQuestionResource extends Resource
                     ->sortable()
                     ->wrap(),
 
-                Tables\Columns\TextColumn::make('field_type')
-                    ->label('Field Type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'text' => 'gray',
-                        'email' => 'info',
-                        'number' => 'warning',
-                        'textarea' => 'success',
-                        'select_one' => 'primary',
-                        'select_multiple' => 'danger',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'text' => 'Text',
-                        'email' => 'Email',
-                        'number' => 'Number',
-                        'textarea' => 'Long Text',
-                        'select_one' => 'Select One',
-                        'select_multiple' => 'Select Multiple',
-                        default => $state,
-                    })
+                    Tables\Columns\TextColumn::make('field_type')
+                        ->label('Field Type')
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state) {
+                            'text' => 'gray',
+                            'email' => 'info',
+                            'number' => 'warning',
+                            'textarea' => 'success',
+                            'select_one' => 'primary',
+                            'select_multiple' => 'danger',
+                            'date' => 'warning',
+                            default => 'gray',
+                        })
+                        ->formatStateUsing(fn (string $state): string => match ($state) {
+                            'text' => 'Text',
+                            'email' => 'Email',
+                            'number' => 'Number',
+                            'textarea' => 'Long Text',
+                            'select_one' => 'Select One',
+                            'select_multiple' => 'Select Multiple',
+                            'date' => 'Date',
+                            default => $state,
+                        })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('options')

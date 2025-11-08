@@ -141,10 +141,11 @@
                                 <!-- Scrollable Time Slots List -->
                                 <div class="space-y-1.5 overflow-y-auto flex-1 min-h-0">
                                     @foreach($availableTimeSlots as $slot)
-                                        @php
-                                            $slotDateTime = \Carbon\Carbon::parse($selectedDate . ' ' . $slot['start']);
-                                            $isPast = $slotDateTime->lt(\Carbon\Carbon::now());
-                                        @endphp
+                                    @php
+                                        $coachTimezone = $service->user->timezone ?? 'Africa/Cairo';
+                                        $slotDateTime = \Carbon\Carbon::parse($selectedDate . ' ' . $slot['start'], $coachTimezone);
+                                        $isPast = $slotDateTime->lt(\Carbon\Carbon::now($coachTimezone));
+                                    @endphp
                                         <button
                                             type="button"
                                             @if(!$isPast)
@@ -202,7 +203,12 @@
 
                 <div class="mb-4 p-3 bg-blue-50 rounded-lg">
                     <p class="text-sm text-gray-700">
-                        <strong>{{ __('common.selected') }}:</strong> {{ \Carbon\Carbon::parse($selectedDate)->locale(app()->getLocale())->translatedFormat('M d, Y') }} {{ __('common.at') }} {{ \Carbon\Carbon::parse($selectedTime)->format('g:i A') }}
+                        <strong>{{ __('common.selected') }}:</strong> 
+                        @php
+                            $coachTimezone = $service->user->timezone ?? 'Africa/Cairo';
+                            $selectedDateTime = \Carbon\Carbon::parse($selectedDate . ' ' . $selectedTime, $coachTimezone);
+                        @endphp
+                        {{ $selectedDateTime->locale(app()->getLocale())->translatedFormat('M d, Y') }} {{ __('common.at') }} {{ $selectedDateTime->format('g:i A') }}
                     </p>
                 </div>
 
@@ -340,6 +346,13 @@
                                                         </label>
                                                     @endforeach
                                                 </div>
+                                            @elseif($question->field_type === 'date')
+                                                <input
+                                                    type="date"
+                                                    wire:model.blur="questionAnswers.{{ $question->id }}"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    @if($question->is_required) required @endif
+                                                >
                                             @endif
 
                                             @error('questionAnswers.' . $question->id)
@@ -399,7 +412,11 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">{{ __('common.date') }} & {{ __('common.time') }}:</span>
-                            <span class="font-semibold">{{ $appointment->date_time->locale(app()->getLocale())->translatedFormat('M d, Y g:i A') }}</span>
+                            @php
+                                $coachTimezone = $service->user->timezone ?? 'Africa/Cairo';
+                                $appointmentDateTime = $appointment->date_time->setTimezone($coachTimezone);
+                            @endphp
+                            <span class="font-semibold">{{ $appointmentDateTime->locale(app()->getLocale())->translatedFormat('M d, Y g:i A') }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">{{ __('common.duration') }}:</span>

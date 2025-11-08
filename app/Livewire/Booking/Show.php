@@ -49,6 +49,14 @@ class Show extends Component
         $this->bookingService = $bookingService;
     }
 
+    /**
+     * Get the coach's timezone
+     */
+    protected function getCoachTimezone(): string
+    {
+        return $this->service?->user?->timezone ?? 'Africa/Cairo';
+    }
+
     public function mount(string $tenantSlug, string $serviceSlug)
     {
         $this->tenantSlug = $tenantSlug;
@@ -63,7 +71,7 @@ class Show extends Component
         $this->service = Service::where('tenant_id', $this->tenant->id)
             ->where('slug', $serviceSlug)
             ->where('is_active', true)
-            ->with('questions')
+            ->with(['questions', 'user'])
             ->firstOrFail();
         
         // Initialize question answers
@@ -165,8 +173,9 @@ class Show extends Component
             return;
         }
         
-        $dateTime = Carbon::parse($this->selectedDate . ' ' . $time);
-        $now = Carbon::now();
+        $coachTimezone = $this->getCoachTimezone();
+        $dateTime = Carbon::parse($this->selectedDate . ' ' . $time, $coachTimezone);
+        $now = Carbon::now($coachTimezone);
         
         if ($dateTime->lt($now)) {
             $this->addError('selectedTime', 'Cannot select past time slots. Please select a future time.');
@@ -201,14 +210,20 @@ class Show extends Component
                         $rules['questionAnswers.' . $question->id] = 'required|email|max:255';
                     } elseif ($question->field_type === 'number') {
                         $rules['questionAnswers.' . $question->id] = 'required|numeric';
+                    } elseif ($question->field_type === 'date') {
+                        $rules['questionAnswers.' . $question->id] = 'required|date';
                     } else {
                         $rules['questionAnswers.' . $question->id] = 'required|string|max:1000';
                     }
                 } else {
-                    if ($question->field_type === 'email') {
+                    if ($question->field_type === 'select_multiple') {
+                        $rules['questionAnswers.' . $question->id] = 'nullable|array';
+                    } elseif ($question->field_type === 'email') {
                         $rules['questionAnswers.' . $question->id] = 'nullable|email|max:255';
                     } elseif ($question->field_type === 'number') {
                         $rules['questionAnswers.' . $question->id] = 'nullable|numeric';
+                    } elseif ($question->field_type === 'date') {
+                        $rules['questionAnswers.' . $question->id] = 'nullable|date';
                     } else {
                         $rules['questionAnswers.' . $question->id] = 'nullable|string|max:1000';
                     }
@@ -357,14 +372,15 @@ class Show extends Component
         );
         
         // Filter out past time slots if the selected date is today
-        $selectedDate = Carbon::parse($date);
-        $today = Carbon::today();
-        $now = Carbon::now();
+        $coachTimezone = $this->getCoachTimezone();
+        $selectedDate = Carbon::parse($date, $coachTimezone);
+        $today = Carbon::today($coachTimezone);
+        $now = Carbon::now($coachTimezone);
         
         if ($selectedDate->isToday()) {
             // Filter out time slots that have already passed
-            $filteredSlots = array_filter($allSlots, function($slot) use ($date, $now) {
-                $slotDateTime = Carbon::parse($date . ' ' . $slot['start']);
+            $filteredSlots = array_filter($allSlots, function($slot) use ($date, $now, $coachTimezone) {
+                $slotDateTime = Carbon::parse($date . ' ' . $slot['start'], $coachTimezone);
                 return $slotDateTime->gt($now);
             });
             $this->availableTimeSlots = array_values($filteredSlots); // Re-index array
@@ -501,14 +517,15 @@ class Show extends Component
         );
         
         // Filter out past time slots if the selected date is today
-        $selectedDate = Carbon::parse($date);
-        $today = Carbon::today();
-        $now = Carbon::now();
+        $coachTimezone = $this->getCoachTimezone();
+        $selectedDate = Carbon::parse($date, $coachTimezone);
+        $today = Carbon::today($coachTimezone);
+        $now = Carbon::now($coachTimezone);
         
         if ($selectedDate->isToday()) {
             // Filter out time slots that have already passed
-            $filteredSlots = array_filter($allSlots, function($slot) use ($date, $now) {
-                $slotDateTime = Carbon::parse($date . ' ' . $slot['start']);
+            $filteredSlots = array_filter($allSlots, function($slot) use ($date, $now, $coachTimezone) {
+                $slotDateTime = Carbon::parse($date . ' ' . $slot['start'], $coachTimezone);
                 return $slotDateTime->gt($now);
             });
             $this->availableTimeSlots = array_values($filteredSlots); // Re-index array
@@ -575,7 +592,8 @@ class Show extends Component
             return null;
         }
 
-        $dateTime = Carbon::parse($this->selectedDate . ' ' . $this->selectedTime);
+        $coachTimezone = $this->getCoachTimezone();
+        $dateTime = Carbon::parse($this->selectedDate . ' ' . $this->selectedTime, $coachTimezone);
         return $this->availabilityService->getRemainingSpots(
             $this->tenant->id,
             $this->service->id,

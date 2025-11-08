@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
             $table->string('question_text');
-            $table->enum('field_type', ['text', 'email', 'number', 'textarea', 'select_one', 'select_multiple']);
+            $table->enum('field_type', ['text', 'email', 'number', 'textarea', 'select_one', 'select_multiple', 'date']);
             $table->json('options')->nullable(); // For select_one and select_multiple fields
             $table->boolean('is_required')->default(false);
             $table->integer('sort_order')->default(0);
