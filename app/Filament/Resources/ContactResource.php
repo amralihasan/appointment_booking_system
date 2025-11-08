@@ -31,6 +31,8 @@ class ContactResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
+    protected static ?int $navigationSort = 4;
+
     protected static ?string $navigationLabel = null;
 
     protected static ?string $modelLabel = null;

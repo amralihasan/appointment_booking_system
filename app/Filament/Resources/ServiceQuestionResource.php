@@ -26,6 +26,8 @@ class ServiceQuestionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Service Questions';
 
+    protected static ?int $navigationSort = 7;
+
     protected static bool $isScopedToTenant = false;
 
     public static function form(Form $form): Form

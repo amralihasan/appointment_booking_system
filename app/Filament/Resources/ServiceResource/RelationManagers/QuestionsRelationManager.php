@@ -46,8 +46,8 @@ class QuestionsRelationManager extends RelationManager
                             ->schema([
                                 Forms\Components\TextInput::make('value')
                                     ->label('Option Value')
-                                    ->required()
-                                    ->maxLength(255),
+                    ->required()
+                    ->maxLength(255),
                             ])
                             ->defaultItems(0)
                             ->addActionLabel('Add Option')

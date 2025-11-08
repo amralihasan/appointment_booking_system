@@ -62,3 +62,25 @@
     fill: white !important;
     stroke: white !important;
 }
+
+/* Hover state - change to orange */
+.fi-sidebar .fi-sidebar-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]),
+.fi-sidebar .fi-sidebar-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) *,
+.fi-sidebar .fi-sidebar-nav-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]),
+.fi-sidebar .fi-sidebar-nav-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) *,
+.fi-sidebar .fi-sidebar-nav-link:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]),
+.fi-sidebar .fi-sidebar-nav-link:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) * {
+    color: rgb(251, 146, 60) !important; /* Orange-400 */
+}
+
+/* Hover state icons - change to orange */
+.fi-sidebar .fi-sidebar-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) svg,
+.fi-sidebar .fi-sidebar-nav-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) svg,
+.fi-sidebar .fi-sidebar-nav-link:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) svg,
+.fi-sidebar .fi-sidebar-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) .fi-icon,
+.fi-sidebar .fi-sidebar-nav-item:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) .fi-icon,
+.fi-sidebar .fi-sidebar-nav-link:hover:not(.fi-active):not(.fi-sidebar-item-active):not([aria-current="page"]) .fi-icon {
+    color: rgb(251, 146, 60) !important; /* Orange-400 */
+    fill: rgb(251, 146, 60) !important; /* Orange-400 */
+    stroke: rgb(251, 146, 60) !important; /* Orange-400 */
+}

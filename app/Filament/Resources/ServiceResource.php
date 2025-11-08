@@ -20,6 +20,8 @@ class ServiceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
+    protected static ?int $navigationSort = 6;
+
     protected static ?string $navigationLabel = null;
 
     protected static ?string $modelLabel = null;
