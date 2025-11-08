@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceResource\Pages;
 use App\Models\Service;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -216,17 +217,33 @@ class ServiceResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->where('tenant_id', auth()->user()->tenant_id)
-            ->where('user_id', auth()->id())
-            ->with('tenant');
+        $query = parent::getEloquentQuery();
+        
+        // Get tenant from Filament context (works for both regular users and impersonating owners)
+        $tenant = Filament::getTenant();
+        if ($tenant) {
+            $query->where('tenant_id', $tenant->id);
+        }
+        
+        // Only filter by user_id if user is not an owner (owners see all users' data when impersonating)
+        $user = auth()->user();
+        if ($user && !$user->isOwner()) {
+            $query->where('user_id', $user->id);
+        }
+        
+        return $query->with('tenant');
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['tenant_id'] = auth()->user()->tenant_id;
+        $data['tenant_id'] = auth()->user()->tenant_id ?? \Filament\Facades\Filament::getTenant()?->id;
         $data['user_id'] = auth()->id();
 
         return $data;
+    }
+
+    public static function getTenantOwnershipRelationshipName(): string
+    {
+        return 'tenant';
     }
 }

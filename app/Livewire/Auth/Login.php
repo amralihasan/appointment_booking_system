@@ -29,6 +29,15 @@ class Login extends Component
 
         session()->regenerate();
 
+        $user = Auth::user();
+        
+        // Redirect owners to owner panel, tenants to admin panel
+        if ($user->isOwner()) {
+            return redirect()->intended('/owner');
+        }
+
+        // For tenant users, redirect to their tenant's admin panel
+        // Filament will handle tenant routing automatically
         return redirect()->intended('/admin');
     }
 

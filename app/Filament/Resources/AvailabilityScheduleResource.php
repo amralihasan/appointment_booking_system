@@ -198,25 +198,41 @@ class AvailabilityScheduleResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Get one record per day (the first one ordered by start_time) to avoid duplicates in the table
-        $tenantId = auth()->user()->tenant_id;
-        $userId = auth()->id();
+        // Get tenant from Filament context (works for both regular users and impersonating owners)
+        $tenant = \Filament\Facades\Filament::getTenant();
+        $user = auth()->user();
+        
+        if (!$tenant) {
+            return parent::getEloquentQuery()->whereRaw('1 = 0'); // Return empty query if no tenant
+        }
+        
+        $tenantId = $tenant->id;
+        $userId = $user && !$user->isOwner() ? $user->id : null;
         
         // Use a subquery to get the minimum ID for each day
         $subquery = AvailabilitySchedule::query()
-            ->where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
-            ->selectRaw('MIN(id) as id')
+            ->where('tenant_id', $tenantId);
+        
+        if ($userId) {
+            $subquery->where('user_id', $userId);
+        }
+        
+        $subquery->selectRaw('MIN(id) as id')
             ->groupBy('day_of_week');
         
         $ids = $subquery->pluck('id');
         
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
             ->whereIn('id', $ids)
             ->orderBy('day_of_week')
             ->orderBy('start_time');
+        
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        
+        return $query;
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array
@@ -224,9 +240,14 @@ class AvailabilityScheduleResource extends Resource
         // Remove time_slots and is_active_global from data as they're not model fields
         // We'll handle them in the CreateRecord page
         unset($data['time_slots'], $data['is_active_global']);
-        $data['tenant_id'] = auth()->user()->tenant_id;
+        $data['tenant_id'] = auth()->user()->tenant_id ?? \Filament\Facades\Filament::getTenant()?->id;
         $data['user_id'] = auth()->id();
 
         return $data;
+    }
+
+    public static function getTenantOwnershipRelationshipName(): string
+    {
+        return 'tenant';
     }
 }
