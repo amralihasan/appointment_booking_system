@@ -18,56 +18,56 @@ class QuestionsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Question Information')
+                Forms\Components\Section::make(__('filament.question_information'))
                     ->schema([
                         Forms\Components\TextInput::make('question_text')
-                            ->label('Question Text')
+                            ->label(__('filament.question_text'))
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
 
                             Forms\Components\Select::make('field_type')
-                                ->label('Field Type')
+                                ->label(__('filament.field_type'))
                                 ->required()
                                 ->options([
-                                    'text' => 'Text',
-                                    'email' => 'Email',
-                                    'number' => 'Number',
-                                    'textarea' => 'Long Text',
-                                    'select_one' => 'Select One Option',
-                                    'select_multiple' => 'Select Multiple Options',
-                                    'date' => 'Date',
+                                    'text' => __('filament.field_type_text'),
+                                    'email' => __('filament.field_type_email'),
+                                    'number' => __('filament.field_type_number'),
+                                    'textarea' => __('filament.field_type_textarea'),
+                                    'select_one' => __('filament.field_type_select_one'),
+                                    'select_multiple' => __('filament.field_type_select_multiple'),
+                                    'date' => __('filament.field_type_date'),
                                 ])
                             ->live()
                             ->afterStateUpdated(fn (Forms\Set $set) => $set('options', null)),
 
                         Forms\Components\Repeater::make('options')
-                            ->label('Options')
+                            ->label(__('filament.options'))
                             ->schema([
                                 Forms\Components\TextInput::make('value')
-                                    ->label('Option Value')
+                                    ->label(__('filament.option_value'))
                     ->required()
                     ->maxLength(255),
                             ])
                             ->defaultItems(0)
-                            ->addActionLabel('Add Option')
+                            ->addActionLabel(__('filament.add_option'))
                             ->visible(fn (Forms\Get $get) => in_array($get('field_type'), ['select_one', 'select_multiple']))
                             ->required(fn (Forms\Get $get) => in_array($get('field_type'), ['select_one', 'select_multiple']))
-                            ->helperText('Add options for select fields')
+                            ->helperText(__('filament.add_options_helper'))
                             ->dehydrated(fn ($state) => !empty($state))
                             ->default(fn ($record) => $record && $record->options ? array_map(fn ($opt) => ['value' => $opt], $record->options) : [])
                             ->columnSpanFull(),
 
                         Forms\Components\Toggle::make('is_required')
-                            ->label('Required')
+                            ->label(__('filament.required'))
                             ->default(false)
-                            ->helperText('Customer must answer this question'),
+                            ->helperText(__('filament.required_helper')),
 
                         Forms\Components\TextInput::make('sort_order')
-                            ->label('Sort Order')
+                            ->label(__('filament.sort_order'))
                             ->numeric()
                             ->default(0)
-                            ->helperText('Lower numbers appear first'),
+                            ->helperText(__('filament.sort_order_helper')),
                     ])
                     ->columns(2),
             ]);
@@ -79,13 +79,13 @@ class QuestionsRelationManager extends RelationManager
             ->recordTitleAttribute('question_text')
             ->columns([
                 Tables\Columns\TextColumn::make('question_text')
-                    ->label('Question')
+                    ->label(__('filament.question'))
                     ->searchable()
                     ->sortable()
                     ->wrap(),
 
                     Tables\Columns\TextColumn::make('field_type')
-                        ->label('Field Type')
+                        ->label(__('filament.field_type'))
                         ->badge()
                         ->color(fn (string $state): string => match ($state) {
                             'text' => 'gray',
@@ -98,22 +98,22 @@ class QuestionsRelationManager extends RelationManager
                             default => 'gray',
                         })
                         ->formatStateUsing(fn (string $state): string => match ($state) {
-                            'text' => 'Text',
-                            'email' => 'Email',
-                            'number' => 'Number',
-                            'textarea' => 'Long Text',
-                            'select_one' => 'Select One',
-                            'select_multiple' => 'Select Multiple',
-                            'date' => 'Date',
+                            'text' => __('filament.field_type_text'),
+                            'email' => __('filament.field_type_email'),
+                            'number' => __('filament.field_type_number'),
+                            'textarea' => __('filament.field_type_textarea'),
+                            'select_one' => __('filament.field_type_select_one_short'),
+                            'select_multiple' => __('filament.field_type_select_multiple_short'),
+                            'date' => __('filament.field_type_date'),
                             default => $state,
                         })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('options')
-                    ->label('Options')
+                    ->label(__('filament.options'))
                     ->formatStateUsing(function ($state) {
                         if (!$state) {
-                            return 'N/A';
+                            return __('filament.not_available');
                         }
                         
                         // If it's already an array, use it directly
@@ -134,12 +134,12 @@ class QuestionsRelationManager extends RelationManager
                     ->toggleable(),
 
                 Tables\Columns\IconColumn::make('is_required')
-                    ->label('Required')
+                    ->label(__('filament.required'))
                     ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort Order')
+                    ->label(__('filament.sort_order'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

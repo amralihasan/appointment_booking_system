@@ -170,5 +170,37 @@ return [
     'owner_panel' => 'لوحة المالك',
     'tenant_management' => 'إدارة المستأجرين',
     'system_stats' => 'إحصائيات النظام',
+    
+    // Service Questions
+    'service_questions' => 'أسئلة الخدمة',
+    'service_question' => 'سؤال الخدمة',
+    'question_information' => 'معلومات السؤال',
+    'question_text' => 'نص السؤال',
+    'field_type' => 'نوع الحقل',
+    'field_type_text' => 'نص',
+    'field_type_email' => 'بريد إلكتروني',
+    'field_type_number' => 'رقم',
+    'field_type_textarea' => 'نص طويل',
+    'field_type_select_one' => 'اختر خياراً واحداً',
+    'field_type_select_multiple' => 'اختر خيارات متعددة',
+    'field_type_date' => 'تاريخ',
+    'field_type_select_one_short' => 'اختر واحداً',
+    'field_type_select_multiple_short' => 'اختر متعدد',
+    'options' => 'الخيارات',
+    'option_value' => 'قيمة الخيار',
+    'add_option' => 'إضافة خيار',
+    'add_options_helper' => 'أضف خيارات لحقول الاختيار',
+    'required' => 'مطلوب',
+    'required_helper' => 'يجب على العميل الإجابة على هذا السؤال',
+    'sort_order' => 'ترتيب الفرز',
+    'sort_order_helper' => 'الأرقام الأقل تظهر أولاً',
+    'question' => 'السؤال',
+    'answer' => 'الإجابة',
+    'not_available' => 'غير متاح',
+    'required_status' => 'حالة المطلوب',
+    
+    // Appointment Tabs
+    'appointment_information' => 'معلومات الموعد',
+    'question_answers' => 'إجابات الأسئلة',
 ];
 

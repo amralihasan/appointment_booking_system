@@ -17,6 +17,11 @@ class ClientInformationRelationManager extends RelationManager
     protected static string $view = 'filament.resources.appointment-resource.relation-managers.client-information-relation-manager';
 
     public ?array $data = [];
+    
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.client_information');
+    }
 
     // This is not a real relationship, we'll override the methods
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool

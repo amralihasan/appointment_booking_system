@@ -20,11 +20,26 @@ class ServiceQuestionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-question-mark-circle';
 
-    protected static ?string $navigationLabel = 'Service Questions';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $modelLabel = 'Service Question';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Service Questions';
+    protected static ?string $pluralModelLabel = null;
+    
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.service_questions');
+    }
+    
+    public static function getModelLabel(): string
+    {
+        return __('filament.service_question');
+    }
+    
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.service_questions');
+    }
 
     protected static ?int $navigationSort = 7;
 
@@ -34,10 +49,10 @@ class ServiceQuestionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Question Information')
+                Forms\Components\Section::make(__('filament.question_information'))
                     ->schema([
                         Forms\Components\Select::make('service_id')
-                            ->label('Service')
+                            ->label(__('filament.service'))
                             ->relationship('service', 'name', modifyQueryUsing: function (Builder $query) {
                                 $tenant = Filament::getTenant();
                                 if ($tenant) {
@@ -54,53 +69,53 @@ class ServiceQuestionResource extends Resource
                             ->disabled(fn ($context) => $context === 'edit'),
 
                         Forms\Components\TextInput::make('question_text')
-                            ->label('Question Text')
+                            ->label(__('filament.question_text'))
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('field_type')
-                            ->label('Field Type')
+                            ->label(__('filament.field_type'))
                             ->required()
                             ->options([
-                                'text' => 'Text',
-                                'email' => 'Email',
-                                'number' => 'Number',
-                                'textarea' => 'Long Text',
-                                'select_one' => 'Select One Option',
-                                'select_multiple' => 'Select Multiple Options',
-                                'date' => 'Date',
+                                'text' => __('filament.field_type_text'),
+                                'email' => __('filament.field_type_email'),
+                                'number' => __('filament.field_type_number'),
+                                'textarea' => __('filament.field_type_textarea'),
+                                'select_one' => __('filament.field_type_select_one'),
+                                'select_multiple' => __('filament.field_type_select_multiple'),
+                                'date' => __('filament.field_type_date'),
                             ])
                             ->live()
                             ->afterStateUpdated(fn (Forms\Set $set) => $set('options', null)),
 
                         Forms\Components\Repeater::make('options')
-                            ->label('Options')
+                            ->label(__('filament.options'))
                             ->schema([
                                 Forms\Components\TextInput::make('value')
-                                    ->label('Option Value')
+                                    ->label(__('filament.option_value'))
                                     ->required()
                                     ->maxLength(255),
                             ])
                             ->defaultItems(0)
-                            ->addActionLabel('Add Option')
+                            ->addActionLabel(__('filament.add_option'))
                             ->visible(fn (Forms\Get $get) => in_array($get('field_type'), ['select_one', 'select_multiple']))
                             ->required(fn (Forms\Get $get) => in_array($get('field_type'), ['select_one', 'select_multiple']))
-                            ->helperText('Add options for select fields')
+                            ->helperText(__('filament.add_options_helper'))
                             ->dehydrated(fn ($state) => !empty($state))
                             ->default(fn ($record) => $record && $record->options ? array_map(fn ($opt) => ['value' => $opt], $record->options) : [])
                             ->columnSpanFull(),
 
                         Forms\Components\Toggle::make('is_required')
-                            ->label('Required')
+                            ->label(__('filament.required'))
                             ->default(false)
-                            ->helperText('Customer must answer this question'),
+                            ->helperText(__('filament.required_helper')),
 
                         Forms\Components\TextInput::make('sort_order')
-                            ->label('Sort Order')
+                            ->label(__('filament.sort_order'))
                             ->numeric()
                             ->default(0)
-                            ->helperText('Lower numbers appear first'),
+                            ->helperText(__('filament.sort_order_helper')),
                     ])
                     ->columns(2),
             ]);
@@ -111,18 +126,18 @@ class ServiceQuestionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('service.name')
-                    ->label('Service')
+                    ->label(__('filament.service'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('question_text')
-                    ->label('Question')
+                    ->label(__('filament.question'))
                     ->searchable()
                     ->sortable()
                     ->wrap(),
 
                     Tables\Columns\TextColumn::make('field_type')
-                        ->label('Field Type')
+                        ->label(__('filament.field_type'))
                         ->badge()
                         ->color(fn (string $state): string => match ($state) {
                             'text' => 'gray',
@@ -135,22 +150,22 @@ class ServiceQuestionResource extends Resource
                             default => 'gray',
                         })
                         ->formatStateUsing(fn (string $state): string => match ($state) {
-                            'text' => 'Text',
-                            'email' => 'Email',
-                            'number' => 'Number',
-                            'textarea' => 'Long Text',
-                            'select_one' => 'Select One',
-                            'select_multiple' => 'Select Multiple',
-                            'date' => 'Date',
+                            'text' => __('filament.field_type_text'),
+                            'email' => __('filament.field_type_email'),
+                            'number' => __('filament.field_type_number'),
+                            'textarea' => __('filament.field_type_textarea'),
+                            'select_one' => __('filament.field_type_select_one_short'),
+                            'select_multiple' => __('filament.field_type_select_multiple_short'),
+                            'date' => __('filament.field_type_date'),
                             default => $state,
                         })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('options')
-                    ->label('Options')
+                    ->label(__('filament.options'))
                     ->formatStateUsing(function ($state) {
                         if (!$state) {
-                            return 'N/A';
+                            return __('filament.not_available');
                         }
                         
                         // If it's already an array, use it directly
@@ -171,12 +186,12 @@ class ServiceQuestionResource extends Resource
                     ->toggleable(),
 
                 Tables\Columns\IconColumn::make('is_required')
-                    ->label('Required')
+                    ->label(__('filament.required'))
                     ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort Order')
+                    ->label(__('filament.sort_order'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -187,7 +202,7 @@ class ServiceQuestionResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('service_id')
-                    ->label('Service')
+                    ->label(__('filament.service'))
                     ->relationship('service', 'name', modifyQueryUsing: function (Builder $query) {
                         $tenant = Filament::getTenant();
                         if ($tenant) {
@@ -198,18 +213,19 @@ class ServiceQuestionResource extends Resource
                     ->preload(),
 
                 Tables\Filters\SelectFilter::make('field_type')
-                    ->label('Field Type')
+                    ->label(__('filament.field_type'))
                     ->options([
-                        'text' => 'Text',
-                        'email' => 'Email',
-                        'number' => 'Number',
-                        'textarea' => 'Long Text',
-                        'select_one' => 'Select One Option',
-                        'select_multiple' => 'Select Multiple Options',
+                        'text' => __('filament.field_type_text'),
+                        'email' => __('filament.field_type_email'),
+                        'number' => __('filament.field_type_number'),
+                        'textarea' => __('filament.field_type_textarea'),
+                        'select_one' => __('filament.field_type_select_one'),
+                        'select_multiple' => __('filament.field_type_select_multiple'),
+                        'date' => __('filament.field_type_date'),
                     ]),
 
                 Tables\Filters\TernaryFilter::make('is_required')
-                    ->label('Required Status'),
+                    ->label(__('filament.required_status')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

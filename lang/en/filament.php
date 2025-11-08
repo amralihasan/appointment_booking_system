@@ -170,5 +170,37 @@ return [
     'owner_panel' => 'Owner Panel',
     'tenant_management' => 'Tenant Management',
     'system_stats' => 'System Statistics',
+    
+    // Service Questions
+    'service_questions' => 'Service Questions',
+    'service_question' => 'Service Question',
+    'question_information' => 'Question Information',
+    'question_text' => 'Question Text',
+    'field_type' => 'Field Type',
+    'field_type_text' => 'Text',
+    'field_type_email' => 'Email',
+    'field_type_number' => 'Number',
+    'field_type_textarea' => 'Long Text',
+    'field_type_select_one' => 'Select One Option',
+    'field_type_select_multiple' => 'Select Multiple Options',
+    'field_type_date' => 'Date',
+    'field_type_select_one_short' => 'Select One',
+    'field_type_select_multiple_short' => 'Select Multiple',
+    'options' => 'Options',
+    'option_value' => 'Option Value',
+    'add_option' => 'Add Option',
+    'add_options_helper' => 'Add options for select fields',
+    'required' => 'Required',
+    'required_helper' => 'Customer must answer this question',
+    'sort_order' => 'Sort Order',
+    'sort_order_helper' => 'Lower numbers appear first',
+    'question' => 'Question',
+    'answer' => 'Answer',
+    'not_available' => 'N/A',
+    'required_status' => 'Required Status',
+    
+    // Appointment Tabs
+    'appointment_information' => 'Appointment Information',
+    'question_answers' => 'Question Answers',
 ];
 

@@ -24,6 +24,6 @@ class EditAppointment extends EditRecord
 
     public function getContentTabLabel(): ?string
     {
-        return 'Appointment Information';
+        return __('filament.appointment_information');
     }
 }
