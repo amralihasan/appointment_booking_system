@@ -3,6 +3,151 @@
     background-color: rgb(37, 37, 37) !important;
 }
 
+/* Sidebar header background and text color */
+.fi-sidebar-header,
+header.fi-sidebar-header {
+    background-color: rgb(26, 26, 26) !important;
+    color: white !important;
+}
+
+/* Sidebar header text and icons */
+.fi-sidebar-header *,
+header.fi-sidebar-header * {
+    color: white !important;
+}
+
+/* Sidebar header logo text */
+.fi-sidebar-header .fi-logo,
+header.fi-sidebar-header .fi-logo {
+    color: white !important;
+}
+
+/* Sidebar header icons and SVGs */
+.fi-sidebar-header svg,
+header.fi-sidebar-header svg {
+    color: white !important;
+    fill: white !important;
+    stroke: white !important;
+}
+
+/* Top navigation bar background and text color */
+nav.flex.h-16,
+.fi-topbar,
+.fi-topbar-nav {
+    background-color: rgb(26, 26, 26) !important;
+    color: white !important;
+}
+
+/* Top navigation bar text and icons - but exclude dropdown menus */
+nav.flex.h-16 > *:not(.fi-dropdown):not(.fi-user-menu):not(.fi-tenant-menu),
+.fi-topbar > *:not(.fi-dropdown):not(.fi-user-menu):not(.fi-tenant-menu),
+.fi-topbar-nav > *:not(.fi-dropdown):not(.fi-user-menu):not(.fi-tenant-menu),
+nav.flex.h-16 button:not([class*="dropdown"]):not([class*="user-menu"]):not([class*="tenant-menu"]),
+.fi-topbar button:not([class*="dropdown"]):not([class*="user-menu"]):not([class*="tenant-menu"]),
+.fi-topbar-nav button:not([class*="dropdown"]):not([class*="user-menu"]):not([class*="tenant-menu"]) {
+    color: white !important;
+}
+
+/* Top navigation bar icons and SVGs - but exclude dropdown menus */
+nav.flex.h-16 > *:not(.fi-dropdown):not(.fi-user-menu):not(.fi-tenant-menu) svg,
+.fi-topbar > *:not(.fi-dropdown):not(.fi-user-menu):not(.fi-tenant-menu) svg,
+.fi-topbar-nav > *:not(.fi-dropdown):not(.fi-user-menu):not(.fi-tenant-menu) svg {
+    color: white !important;
+    fill: white !important;
+    stroke: white !important;
+}
+
+/* Dropdown menu (sub menu) - dark text color - HIGH SPECIFICITY */
+.fi-dropdown-panel,
+.fi-dropdown-panel *,
+.fi-dropdown-panel a,
+.fi-dropdown-panel button,
+.fi-dropdown-panel form,
+.fi-dropdown-panel span,
+.fi-dropdown-panel div,
+.fi-dropdown-list,
+.fi-dropdown-list *,
+.fi-dropdown-list a,
+.fi-dropdown-list button,
+.fi-dropdown-list form,
+.fi-dropdown-list span,
+.fi-dropdown-list div,
+.fi-dropdown-list-item,
+.fi-dropdown-list-item *,
+.fi-dropdown-list-item a,
+.fi-dropdown-list-item button,
+.fi-dropdown-list-item form,
+.fi-dropdown-list-item span,
+.fi-dropdown-list-item div,
+.fi-dropdown-list-item-label,
+.fi-dropdown-list-item-label *,
+.fi-dropdown-header,
+.fi-dropdown-header *,
+.fi-user-menu .fi-dropdown-panel,
+.fi-user-menu .fi-dropdown-panel *,
+.fi-user-menu .fi-dropdown-list,
+.fi-user-menu .fi-dropdown-list *,
+.fi-user-menu .fi-dropdown-list-item,
+.fi-user-menu .fi-dropdown-list-item *,
+.fi-tenant-menu .fi-dropdown-panel,
+.fi-tenant-menu .fi-dropdown-panel *,
+.fi-tenant-menu .fi-dropdown-list,
+.fi-tenant-menu .fi-dropdown-list *,
+.fi-tenant-menu .fi-dropdown-list-item,
+.fi-tenant-menu .fi-dropdown-list-item *,
+.fi-theme-switcher,
+.fi-theme-switcher *,
+.fi-theme-switcher-btn,
+.fi-theme-switcher-btn * {
+    color: rgb(17, 24, 39) !important; /* gray-900 */
+}
+
+/* Dropdown menu icons - dark color - HIGH SPECIFICITY */
+.fi-dropdown-panel svg,
+.fi-dropdown-panel * svg,
+.fi-dropdown-list svg,
+.fi-dropdown-list * svg,
+.fi-dropdown-list-item svg,
+.fi-dropdown-list-item * svg,
+.fi-dropdown-list-item-icon,
+.fi-dropdown-list-item-icon svg,
+.fi-dropdown-header svg,
+.fi-dropdown-header * svg,
+.fi-user-menu .fi-dropdown-panel svg,
+.fi-user-menu .fi-dropdown-panel * svg,
+.fi-user-menu .fi-dropdown-list svg,
+.fi-user-menu .fi-dropdown-list * svg,
+.fi-user-menu .fi-dropdown-list-item svg,
+.fi-user-menu .fi-dropdown-list-item * svg,
+.fi-tenant-menu .fi-dropdown-panel svg,
+.fi-tenant-menu .fi-dropdown-panel * svg,
+.fi-tenant-menu .fi-dropdown-list svg,
+.fi-tenant-menu .fi-dropdown-list * svg,
+.fi-tenant-menu .fi-dropdown-list-item svg,
+.fi-tenant-menu .fi-dropdown-list-item * svg,
+.fi-theme-switcher svg,
+.fi-theme-switcher * svg,
+.fi-theme-switcher-btn svg,
+.fi-theme-switcher-btn * svg {
+    color: rgb(107, 114, 128) !important; /* gray-500 */
+    fill: rgb(107, 114, 128) !important;
+    stroke: rgb(107, 114, 128) !important;
+}
+
+/* Dropdown menu background - keep white */
+.fi-dropdown-panel,
+.fi-user-menu .fi-dropdown-panel,
+.fi-tenant-menu .fi-dropdown-panel {
+    background-color: white !important;
+}
+
+/* Override any white color rules for dropdown menu - FINAL OVERRIDE */
+.fi-dropdown-panel *:not(.fi-active):not(.fi-theme-switcher-btn.fi-active),
+.fi-user-menu .fi-dropdown-panel *:not(.fi-active):not(.fi-theme-switcher-btn.fi-active),
+.fi-tenant-menu .fi-dropdown-panel *:not(.fi-active):not(.fi-theme-switcher-btn.fi-active) {
+    color: rgb(17, 24, 39) !important; /* gray-900 */
+}
+
 /* Default: All sidebar text and icons are white */
 .fi-sidebar,
 .fi-sidebar * {
