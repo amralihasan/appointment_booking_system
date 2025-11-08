@@ -202,5 +202,24 @@ return [
     // Appointment Tabs
     'appointment_information' => 'Appointment Information',
     'question_answers' => 'Question Answers',
+    
+    // Tenant Profile
+    'category' => 'Category',
+    'select_business_category' => 'Select the business category for this tenant',
+    'save' => 'Save',
+    'tenant_information_updated' => 'Tenant Information Updated',
+    'tenant_information_updated_successfully' => 'Tenant information has been updated successfully.',
+    
+    // Settings
+    'settings' => 'Settings',
+    'profile' => 'Profile',
+    'edit_profile' => 'Edit Profile',
+    'profile_settings_description' => 'Manage your personal profile information.',
+    'currency' => 'Currency',
+    'currency_settings_description' => 'Configure currency settings for your business.',
+    'password' => 'Password',
+    'password_confirmation' => 'Confirm Password',
+    'profile_updated' => 'Profile Updated',
+    'profile_updated_successfully' => 'Your profile has been updated successfully.',
 ];
 

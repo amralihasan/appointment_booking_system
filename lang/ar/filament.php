@@ -202,5 +202,24 @@ return [
     // Appointment Tabs
     'appointment_information' => 'معلومات الموعد',
     'question_answers' => 'إجابات الأسئلة',
+    
+    // Tenant Profile
+    'category' => 'الفئة',
+    'select_business_category' => 'اختر فئة العمل لهذا المستأجر',
+    'save' => 'حفظ',
+    'tenant_information_updated' => 'تم تحديث معلومات المستأجر',
+    'tenant_information_updated_successfully' => 'تم تحديث معلومات المستأجر بنجاح.',
+    
+    // Settings
+    'settings' => 'الإعدادات',
+    'profile' => 'الملف الشخصي',
+    'edit_profile' => 'تعديل الملف الشخصي',
+    'profile_settings_description' => 'إدارة معلومات ملفك الشخصي.',
+    'currency' => 'العملة',
+    'currency_settings_description' => 'تكوين إعدادات العملة لعملك.',
+    'password' => 'كلمة المرور',
+    'password_confirmation' => 'تأكيد كلمة المرور',
+    'profile_updated' => 'تم تحديث الملف الشخصي',
+    'profile_updated_successfully' => 'تم تحديث ملفك الشخصي بنجاح.',
 ];
 
